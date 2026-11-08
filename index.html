@@ -29,13 +29,13 @@
     // 1. Ocultar la página visualmente de inmediato para evitar acceso sin login
     document.documentElement.style.display = 'none';
 
-    // 2. Conectar con TU Supabase real
+    // 2. Conectar con TU Supabase real (Sintaxis y Key corregidas)
     const supabaseUrl = 'https://qkttfwezktegpbpyowah.supabase.co';
-    const supabaseKey = 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQOp';
-    const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+    const supabaseKey = 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQ0p';
+    const supabaseApp = supabase.createClient(supabaseUrl, supabaseKey);
 
     // 3. Verificar si hay alguien logueado
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseApp.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         // Si no hay sesión, expulsar de inmediato a login
         window.location.replace('login.html');
@@ -66,7 +66,7 @@
 
     // Función global para cerrar sesión
     async function logout() {
-      await supabase.auth.signOut();
+      await supabaseApp.auth.signOut();
       localStorage.removeItem('eduTrackUser');
       window.location.replace('login.html');
     }
