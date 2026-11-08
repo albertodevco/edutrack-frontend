@@ -1,32 +1,164 @@
-<!-- Justo antes de cerrar el </head>, añade el SDK de Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso al Sistema | EduTrack IA</title>
+  
+  <!-- Tipografía Inter y FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Estilos del Sistema -->
+  <link rel="stylesheet" href="style.css">
 
-<!-- En el <body>, cambia el formulario -->
-<form id="loginForm" class="login-form">
-    <div class="form-group">
-        <label>Correo Electrónico</label>
-        <input type="email" id="email" required>
-    </div>
-    <div class="form-group">
-        <label>Contraseña</label>
-        <input type="password" id="password" required>
-    </div>
-    <button type="submit" class="btn btn-primary full-width">Ingresar</button>
-</form>
+  <!-- SDK de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="login-body">
 
-<script>
-    const supabaseUrl = 'TU_SUPABASE_PROJECT_URL';
-    const supabaseKey = 'TU_SUPABASE_ANON_KEY';
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">
+        <i class="fas fa-brain"></i>
+      </div>
+      <h2>EduTrack</h2>
+      <p>Inteligencia Artificial para Detección de Subregistro NEE</p>
+    </div>
+
+    <div class="login-content">
+      
+      <div class="login-alert" id="loginAlert" style="display: none; background-color: #fef2f2; border: 1px solid #f87171; color: #b91c1c;">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="loginAlertText"></span>
+      </div>
+
+      <!-- Botones de Acceso Rápido Demo -->
+      <div class="demo-pills-box">
+        <div class="demo-pills-title">
+          <i class="fas fa-bolt"></i> Acceso Rápido para Demostración (1 Clic)
+        </div>
+        <div class="demo-pills-list">
+          <button type="button" class="btn-demo-account" onclick="fillAndSubmit('rector@edutrack.edu.co', 'rector123')">
+            <span class="role"><i class="fas fa-user-tie"></i> Rector / Directivo</span>
+            <span class="user">rector@edutrack.edu.co</span>
+          </button>
+          <button type="button" class="btn-demo-account" onclick="fillAndSubmit('orientador@edutrack.edu.co', 'orientador123')">
+            <span class="role"><i class="fas fa-user-graduate"></i> Docente Orientador</span>
+            <span class="user">orientador@edutrack.edu.co</span>
+          </button>
+          <button type="button" class="btn-demo-account" onclick="fillAndSubmit('analista@edutrack.edu.co', 'analista123')">
+            <span class="role"><i class="fas fa-chart-line"></i> Analista IA / Secretaría</span>
+            <span class="user">analista@edutrack.edu.co</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario de Login -->
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="email">
+            <span><i class="fas fa-envelope"></i> Correo Electrónico Institucional</span>
+          </label>
+          <input 
+            type="email" 
+            name="email" 
+            id="email" 
+            class="form-input" 
+            placeholder="ejemplo@edutrack.edu.co" 
+            value="rector@edutrack.edu.co"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">
+            <span><i class="fas fa-lock"></i> Contraseña</span>
+          </label>
+          <input 
+            type="password" 
+            name="password" 
+            id="password" 
+            class="form-input" 
+            placeholder="••••••••" 
+            value="rector123"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn-login" id="btnLogin">
+          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión en EduTrack
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="login-footer">
+    <p>EduTrack · Proyecto de Inteligencia Artificial (8vo Semestre)</p>
+    <p>Basado en datos oficiales de Educación Formal del DANE 2024</p>
+  </div>
+
+  <script>
+    // Inicializar Supabase con tus credenciales
+    const supabaseUrl = 'https://3YclUAIPb9w9jnnyymWvHA_EWpjdQOp.supabase.co'; // Reemplaza esto con tu URL exacta de proyecto si esta no es válida.
+    const supabaseKey = 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQOp';
     const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    // Si ya tiene sesión iniciada, redirigir al panel principal
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            window.location.href = 'index.html';
+        }
+    });
+
+    const form = document.getElementById('loginForm');
+    const alertBox = document.getElementById('loginAlert');
+    const alertText = document.getElementById('loginAlertText');
+    const btnLogin = document.getElementById('btnLogin');
+
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        
+        btnLogin.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verificando credenciales...';
+        btnLogin.disabled = true;
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) alert("Credenciales incorrectas");
-        else window.location.href = 'index.html';
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (error) {
+            alertBox.style.display = 'flex';
+            alertText.textContent = "Credenciales incorrectas o usuario no registrado en Supabase.";
+            btnLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión en EduTrack';
+            btnLogin.disabled = false;
+        } else {
+            // Guardar metadatos en localStorage para usarlos visualmente en index.html
+            localStorage.setItem('eduTrackUser', JSON.stringify({
+                email: email,
+                name: "Evaluador EduTrack", // Puedes mapearlo luego si usas metadata de Supabase
+                role: "Analista/Docente",
+                inst: "Sede Educativa Oficial"
+            }));
+            window.location.href = 'index.html';
+        }
     });
-</script>
+
+    function fillAndSubmit(email, pass) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = pass;
+      
+      // Ocultar alerta si estaba visible
+      alertBox.style.display = 'none';
+      
+      // Disparar el evento submit
+      form.dispatchEvent(new Event('submit'));
+    }
+  </script>
+</body>
+</html>
