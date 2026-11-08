@@ -229,7 +229,7 @@ function handleAnalysisSubmit(e) {
         <p style="margin-top: 1rem; color: var(--secondary);">Consultando motor de Machine Learning...</p>
       </div>`;
   }
-  
+
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando con Modelo IA...';
@@ -251,7 +251,7 @@ function handleAnalysisSubmit(e) {
   // ⚠️ CAMBIA ESTA URL: 
   // Si usas XAMPP local usa: 'http://localhost:5000/predecir'
   // Si usas nube usa: 'https://edutrack-api.onrender.com/predecir'
-  const API_URL = 'http://localhost:5000/predecir';
+  const API_URL = 'https://ia-edutrack.onrender.com/predecir';
 
   // --- PETICIÓN FETCH A LA IA ---
   fetch(API_URL, {
@@ -259,155 +259,155 @@ function handleAnalysisSubmit(e) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dataToSend)
   })
-  .then(response => {
-    if (!response.ok) throw new Error('Error en la comunicación con el servidor IA');
-    return response.json();
-  })
-  .then(data => {
-    if (data.error) throw new Error(data.error);
+    .then(response => {
+      if (!response.ok) throw new Error('Error en la comunicación con el servidor IA');
+      return response.json();
+    })
+    .then(data => {
+      if (data.error) throw new Error(data.error);
 
-    // 4. Recibir Probabilidad Real del Árbol de Decisión / Regresión Logística
-    let probPresencia = data.probabilidad;
+      // 4. Recibir Probabilidad Real del Árbol de Decisión / Regresión Logística
+      let probPresencia = data.probabilidad;
 
-    // Ajuste contextual para mantener coherencia pedagógica en la UI
-    if (matricula >= 180 && zona === 'Rural') {
-      probPresencia = Math.max(0.78, Math.min(0.88, probPresencia));
-    } else if (matricula < 30) {
-      probPresencia = Math.min(0.38, Math.max(0.12, probPresencia));
-    }
-
-    const probPresenciaPct = Math.round(probPresencia * 100);
-
-    // 5. Estimación de casos esperados según Regresión Lineal Simple DANE
-    const casosEsperados = Math.max(1, Math.round(matricula * 0.0125));
-
-    // 6. Cálculo del Riesgo de Condiciones Foco No Registradas (Riesgo de Subregistro)
-    let riesgoSubregistro = 0;
-    let subtituloRiesgo = '';
-
-    if (casosReportados === 0) {
-      if (orientadores === 0) {
-        if (probPresenciaPct >= 70) {
-          riesgoSubregistro = Math.max(70, Math.min(95, probPresenciaPct));
-          subtituloRiesgo = 'Riesgo crítico de subregistro por falta de apoyo y 0 reportes';
-        } else {
-          riesgoSubregistro = Math.max(10, Math.min(65, Math.round(probPresencia * 85)));
-          subtituloRiesgo = 'Riesgo bajo-moderado (sede pequeña con baja probabilidad esperada)';
-        }
-      } else {
-        riesgoSubregistro = Math.max(20, Math.min(48, Math.round(probPresencia * 42)));
-        subtituloRiesgo = 'Riesgo moderado (sede con orientación profesional en aula)';
+      // Ajuste contextual para mantener coherencia pedagógica en la UI
+      if (matricula >= 180 && zona === 'Rural') {
+        probPresencia = Math.max(0.78, Math.min(0.88, probPresencia));
+      } else if (matricula < 30) {
+        probPresencia = Math.min(0.38, Math.max(0.12, probPresencia));
       }
-    } else {
-      if (casosReportados >= casosEsperados) {
-        if (orientadores > 0) {
-          riesgoSubregistro = Math.max(4, Math.min(12, Math.round(8 - Math.min(4, casosReportados - casosEsperados))));
-          subtituloRiesgo = 'Riesgo mínimo (reporte adecuado y orientación activa)';
-        } else {
-          riesgoSubregistro = Math.max(20, Math.min(35, Math.round(24 + (probPresencia * 6))));
-          subtituloRiesgo = 'Riesgo bajo-moderado (casos identificados pero sin orientador)';
-        }
-      } else {
-        const ratioDeficit = (casosEsperados - casosReportados) / casosEsperados;
+
+      const probPresenciaPct = Math.round(probPresencia * 100);
+
+      // 5. Estimación de casos esperados según Regresión Lineal Simple DANE
+      const casosEsperados = Math.max(1, Math.round(matricula * 0.0125));
+
+      // 6. Cálculo del Riesgo de Condiciones Foco No Registradas (Riesgo de Subregistro)
+      let riesgoSubregistro = 0;
+      let subtituloRiesgo = '';
+
+      if (casosReportados === 0) {
         if (orientadores === 0) {
-          riesgoSubregistro = Math.max(35, Math.min(65, Math.round(30 + (ratioDeficit * 35))));
-          subtituloRiesgo = 'Riesgo medio-alto de subregistro parcial sin orientador';
+          if (probPresenciaPct >= 70) {
+            riesgoSubregistro = Math.max(70, Math.min(95, probPresenciaPct));
+            subtituloRiesgo = 'Riesgo crítico de subregistro por falta de apoyo y 0 reportes';
+          } else {
+            riesgoSubregistro = Math.max(10, Math.min(65, Math.round(probPresencia * 85)));
+            subtituloRiesgo = 'Riesgo bajo-moderado (sede pequeña con baja probabilidad esperada)';
+          }
         } else {
-          riesgoSubregistro = Math.max(15, Math.min(35, Math.round(15 + (ratioDeficit * 20))));
-          subtituloRiesgo = 'Riesgo moderado de subregistro parcial con orientador';
+          riesgoSubregistro = Math.max(20, Math.min(48, Math.round(probPresencia * 42)));
+          subtituloRiesgo = 'Riesgo moderado (sede con orientación profesional en aula)';
+        }
+      } else {
+        if (casosReportados >= casosEsperados) {
+          if (orientadores > 0) {
+            riesgoSubregistro = Math.max(4, Math.min(12, Math.round(8 - Math.min(4, casosReportados - casosEsperados))));
+            subtituloRiesgo = 'Riesgo mínimo (reporte adecuado y orientación activa)';
+          } else {
+            riesgoSubregistro = Math.max(20, Math.min(35, Math.round(24 + (probPresencia * 6))));
+            subtituloRiesgo = 'Riesgo bajo-moderado (casos identificados pero sin orientador)';
+          }
+        } else {
+          const ratioDeficit = (casosEsperados - casosReportados) / casosEsperados;
+          if (orientadores === 0) {
+            riesgoSubregistro = Math.max(35, Math.min(65, Math.round(30 + (ratioDeficit * 35))));
+            subtituloRiesgo = 'Riesgo medio-alto de subregistro parcial sin orientador';
+          } else {
+            riesgoSubregistro = Math.max(15, Math.min(35, Math.round(15 + (ratioDeficit * 20))));
+            subtituloRiesgo = 'Riesgo moderado de subregistro parcial con orientador';
+          }
         }
       }
-    }
 
-    const riesgoSubregistroPct = Math.round(riesgoSubregistro);
+      const riesgoSubregistroPct = Math.round(riesgoSubregistro);
 
-    // 7. Evaluación del Sistema de Alertas
-    let alertType = 'baja'; 
-    let alertTitle = '';
-    let alertBadgeText = '';
-    let alertMessage = '';
-    let alertColorClass = '';
-    let fillClass = '';
+      // 7. Evaluación del Sistema de Alertas
+      let alertType = 'baja';
+      let alertTitle = '';
+      let alertBadgeText = '';
+      let alertMessage = '';
+      let alertColorClass = '';
+      let fillClass = '';
 
-    if (casosReportados === 0 && orientadores === 0 && probPresenciaPct >= 70) {
-      alertType = 'alta';
-      alertColorClass = 'high-priority';
-      fillClass = 'red';
-      alertBadgeText = 'PRIORIDAD ALTA - ACCIÓN URGENTE';
-      alertTitle = 'Alerta de Posible Subregistro y Falta de Apoyo';
-      alertMessage = `La sede educativa reporta 0 casos de estudiantes con TEA, dificultades de aprendizaje o psicosociales y no cuenta con docentes orientadores. Por su matrícula (${matricula} alumnos), el modelo de IA estima una probabilidad de presencia del <strong>${probPresenciaPct}%</strong> (~${casosEsperados} casos esperados), calculando un riesgo de subregistro del <strong>${riesgoSubregistroPct}%</strong>. Se sugiere priorizarla para la implementación de EduTrack y vinculación de orientación escolar.`;
-    } else if (casosReportados > 0 && orientadores === 0) {
-      alertType = 'media';
-      alertColorClass = 'medium-priority';
-      fillClass = 'yellow';
-      alertBadgeText = 'PRIORIDAD MEDIA - CASOS DESATENDIDOS';
-      alertTitle = 'Casos sin Apoyo Profesional';
-      alertMessage = `La sede reporta <strong>${casosReportados} caso(s)</strong> activo(s) con necesidades educativas especiales (de ~${casosEsperados} esperados), pero cuenta con <strong>0 docentes orientadores</strong>. El riesgo de condiciones no registradas se estima en <strong>${riesgoSubregistroPct}%</strong>. Los docentes de aula están asumiendo la atención pedagógica sin acompañamiento psicosocial para los Planes Individuales de Ajustes Razonables (PIAR).`;
-    } else if (casosReportados === 0 && probPresenciaPct >= 70 && orientadores > 0) {
-      alertType = 'media';
-      alertColorClass = 'medium-priority';
-      fillClass = 'yellow';
-      alertBadgeText = 'PRIORIDAD MEDIA - VERIFICACIÓN INTERNA';
-      alertTitle = 'Posible Subregistro en Proceso';
-      alertMessage = `La sede no reporta casos a pesar de que el modelo supervisado estima una probabilidad de presencia del <strong>${probPresenciaPct}%</strong>. Dado que la sede cuenta con orientador (${orientadores}), el riesgo de subregistro se modera al <strong>${riesgoSubregistroPct}%</strong>; se recomienda una jornada de tamizaje observacional en aula junto a los docentes para validar posibles casos no registrados en el SIMAT.`;
-    } else {
-      alertType = 'baja';
-      alertColorClass = 'low-priority';
-      fillClass = 'green';
-      alertBadgeText = 'SIN ALERTA CRÍTICA - ESTADO COHERENTE';
-      alertTitle = 'Sede en Monitoreo / Sin Alerta Crítica';
-      alertMessage = `La sede presenta acompañamiento profesional de orientación escolar (${orientadores} docente(s) orientador(es)) y un reporte adecuado de casos (${casosReportados} reportados vs ~${casosEsperados} estimados según matrícula, probabilidad IA: <strong>${probPresenciaPct}%</strong>). El riesgo de condiciones foco no registradas se mantiene en un nivel mínimo controlado del <strong>${riesgoSubregistroPct}%</strong>.`;
-    }
+      if (casosReportados === 0 && orientadores === 0 && probPresenciaPct >= 70) {
+        alertType = 'alta';
+        alertColorClass = 'high-priority';
+        fillClass = 'red';
+        alertBadgeText = 'PRIORIDAD ALTA - ACCIÓN URGENTE';
+        alertTitle = 'Alerta de Posible Subregistro y Falta de Apoyo';
+        alertMessage = `La sede educativa reporta 0 casos de estudiantes con TEA, dificultades de aprendizaje o psicosociales y no cuenta con docentes orientadores. Por su matrícula (${matricula} alumnos), el modelo de IA estima una probabilidad de presencia del <strong>${probPresenciaPct}%</strong> (~${casosEsperados} casos esperados), calculando un riesgo de subregistro del <strong>${riesgoSubregistroPct}%</strong>. Se sugiere priorizarla para la implementación de EduTrack y vinculación de orientación escolar.`;
+      } else if (casosReportados > 0 && orientadores === 0) {
+        alertType = 'media';
+        alertColorClass = 'medium-priority';
+        fillClass = 'yellow';
+        alertBadgeText = 'PRIORIDAD MEDIA - CASOS DESATENDIDOS';
+        alertTitle = 'Casos sin Apoyo Profesional';
+        alertMessage = `La sede reporta <strong>${casosReportados} caso(s)</strong> activo(s) con necesidades educativas especiales (de ~${casosEsperados} esperados), pero cuenta con <strong>0 docentes orientadores</strong>. El riesgo de condiciones no registradas se estima en <strong>${riesgoSubregistroPct}%</strong>. Los docentes de aula están asumiendo la atención pedagógica sin acompañamiento psicosocial para los Planes Individuales de Ajustes Razonables (PIAR).`;
+      } else if (casosReportados === 0 && probPresenciaPct >= 70 && orientadores > 0) {
+        alertType = 'media';
+        alertColorClass = 'medium-priority';
+        fillClass = 'yellow';
+        alertBadgeText = 'PRIORIDAD MEDIA - VERIFICACIÓN INTERNA';
+        alertTitle = 'Posible Subregistro en Proceso';
+        alertMessage = `La sede no reporta casos a pesar de que el modelo supervisado estima una probabilidad de presencia del <strong>${probPresenciaPct}%</strong>. Dado que la sede cuenta con orientador (${orientadores}), el riesgo de subregistro se modera al <strong>${riesgoSubregistroPct}%</strong>; se recomienda una jornada de tamizaje observacional en aula junto a los docentes para validar posibles casos no registrados en el SIMAT.`;
+      } else {
+        alertType = 'baja';
+        alertColorClass = 'low-priority';
+        fillClass = 'green';
+        alertBadgeText = 'SIN ALERTA CRÍTICA - ESTADO COHERENTE';
+        alertTitle = 'Sede en Monitoreo / Sin Alerta Crítica';
+        alertMessage = `La sede presenta acompañamiento profesional de orientación escolar (${orientadores} docente(s) orientador(es)) y un reporte adecuado de casos (${casosReportados} reportados vs ~${casosEsperados} estimados según matrícula, probabilidad IA: <strong>${probPresenciaPct}%</strong>). El riesgo de condiciones foco no registradas se mantiene en un nivel mínimo controlado del <strong>${riesgoSubregistroPct}%</strong>.`;
+      }
 
-    // 8. Renderizar en la Interfaz de Resultados
-    renderResults({
-      riesgoSubregistroPct,
-      probPresenciaPct,
-      subtituloRiesgo,
-      fillClass,
-      alertColorClass,
-      alertBadgeText,
-      alertTitle,
-      alertMessage,
-      matricula,
-      casosReportados,
-      casosEsperados,
-      orientadores,
-      ratioEstDocente,
-      alertType
-    });
+      // 8. Renderizar en la Interfaz de Resultados
+      renderResults({
+        riesgoSubregistroPct,
+        probPresenciaPct,
+        subtituloRiesgo,
+        fillClass,
+        alertColorClass,
+        alertBadgeText,
+        alertTitle,
+        alertMessage,
+        matricula,
+        casosReportados,
+        casosEsperados,
+        orientadores,
+        ratioEstDocente,
+        alertType
+      });
 
-    // Restaurar UI
-    if (loading) loading.style.display = 'none';
-    if (content) content.style.display = 'block';
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-brain"></i> Analizar Sede Educativa';
-    }
+      // Restaurar UI
+      if (loading) loading.style.display = 'none';
+      if (content) content.style.display = 'block';
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-brain"></i> Analizar Sede Educativa';
+      }
 
-    // Scroll suave
-    if (window.innerWidth < 992) {
-      const resultsCard = document.getElementById('resultsCard');
-      if (resultsCard) resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  })
-  .catch(error => {
-    // --- MANEJO DE ERRORES DE LA IA ---
-    console.error("Error contactando la IA:", error);
-    if (loading) {
-      loading.innerHTML = `
+      // Scroll suave
+      if (window.innerWidth < 992) {
+        const resultsCard = document.getElementById('resultsCard');
+        if (resultsCard) resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    })
+    .catch(error => {
+      // --- MANEJO DE ERRORES DE LA IA ---
+      console.error("Error contactando la IA:", error);
+      if (loading) {
+        loading.innerHTML = `
         <div style="color: #e74c3c; text-align: center; padding: 2rem;">
           <i class="fas fa-exclamation-triangle fa-3x" style="margin-bottom: 1rem;"></i>
           <h3>Error de Conexión</h3>
           <p>No se pudo conectar con el motor de Inteligencia Artificial.</p>
           <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 10px;">Verifica que el servidor Flask (app.py) esté corriendo en el puerto 5000 o que la URL de Render sea correcta.</p>
         </div>`;
-    }
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-brain"></i> Reintentar Análisis';
-    }
-  });
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-brain"></i> Reintentar Análisis';
+      }
+    });
 }
 
 /**
