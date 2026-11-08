@@ -1,0 +1,14 @@
+<script>
+    const supabase = supabaseClient.createClient('TU_SUPABASE_PROJECT_URL', 'TU_SUPABASE_ANON_KEY');
+
+    // Verificar sesión
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) window.location.href = 'login.html';
+    });
+
+    // Botón de cerrar sesión
+    async function logout() {
+        await supabase.auth.signOut();
+        window.location.href = 'login.html';
+    }
+</script>
