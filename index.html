@@ -1,30 +1,84 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EduTrack | Detección de Subregistro en Necesidades Educativas Especiales (IA)</title>
-  
+
   <!-- Tipografía Inter y FontAwesome Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Chart.js para los gráficos del Dashboard -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+
   <!-- Estilos Personalizados de EduTrack -->
   <link rel="stylesheet" href="style.css">
 
   <!-- SDK de Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ==========================================
+       BLOQUE DE SEGURIDAD Y BLOQUEO DE RUTA 
+       ========================================== -->
+  <script>
+    // 1. Ocultar la página visualmente de inmediato para evitar acceso sin login
+    document.documentElement.style.display = 'none';
+
+    // 2. Conectar con TU Supabase real
+    const supabaseUrl = 'https://qkttfwezktegpbpyowah.supabase.co';
+    const supabaseKey = 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQOp';
+    const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+
+    // 3. Verificar si hay alguien logueado
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        // Si no hay sesión, expulsar de inmediato a login
+        window.location.replace('login.html');
+      } else {
+        // Si SÍ hay sesión, mostrar la página
+        document.documentElement.style.display = '';
+
+        // Cuando la página termine de cargar, ponemos el nombre del usuario en la barra superior
+        document.addEventListener('DOMContentLoaded', () => {
+          const userEmail = session.user.email;
+          const savedUser = JSON.parse(localStorage.getItem('eduTrackUser'));
+
+          if (savedUser && savedUser.email === userEmail) {
+            document.getElementById('uiUserName').textContent = savedUser.name;
+            document.getElementById('uiUserRole').textContent = savedUser.role;
+            document.getElementById('uiUserInst').title = savedUser.inst;
+            document.getElementById('uiUserInitial').textContent = savedUser.name.charAt(0).toUpperCase();
+          } else {
+            document.getElementById('uiUserName').textContent = userEmail.split('@')[0];
+            document.getElementById('uiUserRole').textContent = 'Analista Autorizado';
+            document.getElementById('uiUserInitial').textContent = userEmail.charAt(0).toUpperCase();
+          }
+        });
+      }
+    }).catch(() => {
+      window.location.replace('login.html');
+    });
+
+    // Función global para cerrar sesión
+    async function logout() {
+      await supabase.auth.signOut();
+      localStorage.removeItem('eduTrackUser');
+      window.location.replace('login.html');
+    }
+  </script>
 </head>
+
 <body>
 
   <!-- Barra Superior Institucional -->
   <div class="top-gov-bar">
-    <span><i class="fas fa-landmark"></i> República de Colombia · Ministerio de Educación Nacional · DANE Censo 2024</span>
+    <span><i class="fas fa-landmark"></i> República de Colombia · Ministerio de Educación Nacional · DANE Censo
+      2024</span>
     <span><i class="fas fa-shield-alt"></i> Entorno Cloud · Prototipo Funcional EduTrack v1.2</span>
   </div>
 
@@ -57,7 +111,8 @@
             <span class="user-role" id="uiUserRole">Docente</span>
           </div>
         </div>
-        <button onclick="logout()" class="btn-logout" title="Cerrar Sesión" style="border:none; cursor:pointer; background:none; color:inherit; font:inherit; font-weight:600;">
+        <button onclick="logout()" class="btn-logout" title="Cerrar Sesión"
+          style="border:none; cursor:pointer; background:none; color:inherit; font:inherit; font-weight:600;">
           <i class="fas fa-sign-out-alt"></i> Salir
         </button>
       </div>
@@ -74,9 +129,11 @@
       </div>
       <h2 class="hero-title">Detección Temprana y Prevención del Subregistro NEE</h2>
       <p class="hero-desc">
-        EduTrack analiza los factores estructurales y de dotación docente de las sedes educativas oficiales de Colombia 
-        para estimar la probabilidad de subregistro de estudiantes con <strong>Trastornos del Espectro Autista (TEA)</strong>, 
-        <strong>trastornos del aprendizaje</strong> y <strong>condiciones psicosociales</strong>, priorizando dónde se requiere apoyo profesional urgente.
+        EduTrack analiza los factores estructurales y de dotación docente de las sedes educativas oficiales de Colombia
+        para estimar la probabilidad de subregistro de estudiantes con <strong>Trastornos del Espectro Autista
+          (TEA)</strong>,
+        <strong>trastornos del aprendizaje</strong> y <strong>condiciones psicosociales</strong>, priorizando dónde se
+        requiere apoyo profesional urgente.
       </p>
       <div class="hero-badges">
         <div class="hero-badge-item">
@@ -95,8 +152,10 @@
     <section id="dashboard" class="dashboard-section">
       <div class="section-header">
         <div>
-          <h3 class="section-title"><i class="fas fa-chart-line"></i> Diagnóstico de la Realidad Nacional (DANE 2024)</h3>
-          <p class="section-subtitle">Evidencia estadística que fundamenta la necesidad de una herramienta de alerta temprana como EduTrack.</p>
+          <h3 class="section-title"><i class="fas fa-chart-line"></i> Diagnóstico de la Realidad Nacional (DANE 2024)
+          </h3>
+          <p class="section-subtitle">Evidencia estadística que fundamenta la necesidad de una herramienta de alerta
+            temprana como EduTrack.</p>
         </div>
       </div>
 
@@ -159,7 +218,8 @@
             <canvas id="chartBrechaZona"></canvas>
           </div>
           <div class="chart-card-footer">
-            <span><i class="fas fa-info-circle"></i> En la ruralidad solo el 8.1% de sedes reporta casos por falta de detección.</span>
+            <span><i class="fas fa-info-circle"></i> En la ruralidad solo el 8.1% de sedes reporta casos por falta de
+              detección.</span>
             <strong>Fuente: DANE 2024</strong>
           </div>
         </div>
@@ -174,7 +234,8 @@
             <canvas id="chartNivelEducativo"></canvas>
           </div>
           <div class="chart-card-footer">
-            <span><i class="fas fa-exclamation-triangle"></i> Los trastornos de aprendizaje se detectan 13x más en primaria que en preescolar.</span>
+            <span><i class="fas fa-exclamation-triangle"></i> Los trastornos de aprendizaje se detectan 13x más en
+              primaria que en preescolar.</span>
             <strong>Fuente: DANE 2024</strong>
           </div>
         </div>
@@ -186,12 +247,13 @@
       <div class="section-header">
         <div>
           <h3 class="section-title"><i class="fas fa-search-plus"></i> Analizador Predictivo de Sedes Educativas</h3>
-          <p class="section-subtitle">Simule la inferencia del modelo de Machine Learning ingresando las variables de una sede educativa.</p>
+          <p class="section-subtitle">Simule la inferencia del modelo de Machine Learning ingresando las variables de
+            una sede educativa.</p>
         </div>
       </div>
 
       <div class="analysis-workspace">
-        
+
         <!-- Tarjeta del Formulario de Entrada -->
         <div class="form-card">
           <div class="form-header">
@@ -205,13 +267,16 @@
               <i class="fas fa-vial"></i> Casos de Demostración Rápida (1 Clic)
             </div>
             <div class="presets-grid">
-              <button type="button" class="btn-preset danger" onclick="loadPreset('alta')" title="Sede rural sin orientador y con 0 casos">
+              <button type="button" class="btn-preset danger" onclick="loadPreset('alta')"
+                title="Sede rural sin orientador y con 0 casos">
                 <i class="fas fa-exclamation-circle"></i> Caso 1: Prioridad Alta (Subregistro)
               </button>
-              <button type="button" class="btn-preset warning" onclick="loadPreset('media')" title="Sede con casos pero sin orientador">
+              <button type="button" class="btn-preset warning" onclick="loadPreset('media')"
+                title="Sede con casos pero sin orientador">
                 <i class="fas fa-exclamation-triangle"></i> Caso 2: Prioridad Media (Sin Apoyo)
               </button>
-              <button type="button" class="btn-preset success" onclick="loadPreset('baja')" title="Sede con orientación y reporte coherente">
+              <button type="button" class="btn-preset success" onclick="loadPreset('baja')"
+                title="Sede con orientación y reporte coherente">
                 <i class="fas fa-check-circle"></i> Caso 3: Sin Alerta (Monitoreo)
               </button>
             </div>
@@ -220,14 +285,16 @@
           <!-- Formulario de Entrada de Datos -->
           <form id="eduTrackForm" autocomplete="off">
             <div class="form-grid">
-              
+
               <!-- 1. Matrícula total -->
               <div class="form-group">
                 <label class="form-label" for="matricula">
                   <span>Matrícula Total</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Cantidad total de estudiantes matriculados en la sede"></i>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Cantidad total de estudiantes matriculados en la sede"></i>
                 </label>
-                <input type="number" id="matricula" name="matricula" class="form-input" min="1" max="10000" value="210" required>
+                <input type="number" id="matricula" name="matricula" class="form-input" min="1" max="10000" value="210"
+                  required>
                 <span class="input-hint">Total alumnos registrados</span>
               </div>
 
@@ -237,7 +304,8 @@
                   <span>Docentes de Aula</span>
                   <i class="fas fa-question-circle tooltip-icon" title="Docentes frente a grupo escolar"></i>
                 </label>
-                <input type="number" id="docentes" name="docentes" class="form-input" min="0" max="500" value="8" required>
+                <input type="number" id="docentes" name="docentes" class="form-input" min="0" max="500" value="8"
+                  required>
                 <span class="input-hint">Personal docente regular</span>
               </div>
 
@@ -245,9 +313,11 @@
               <div class="form-group">
                 <label class="form-label" for="orientadores">
                   <span>Docentes Orientadores</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Profesionales en psicología / psicopedagogía"></i>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Profesionales en psicología / psicopedagogía"></i>
                 </label>
-                <input type="number" id="orientadores" name="orientadores" class="form-input" min="0" max="50" value="0" required>
+                <input type="number" id="orientadores" name="orientadores" class="form-input" min="0" max="50" value="0"
+                  required>
                 <span class="input-hint">Orientación escolar asignada</span>
               </div>
 
@@ -255,7 +325,8 @@
               <div class="form-group">
                 <label class="form-label" for="niveles">
                   <span>Niveles Educativos</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Preescolar, Básica Primaria, Secundaria, Media"></i>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Preescolar, Básica Primaria, Secundaria, Media"></i>
                 </label>
                 <input type="number" id="niveles" name="niveles" class="form-input" min="1" max="6" value="2" required>
                 <span class="input-hint">Cant. de niveles ofrecidos (1 a 5)</span>
@@ -265,9 +336,11 @@
               <div class="form-group">
                 <label class="form-label" for="jornadas">
                   <span>Jornadas Operativas</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Mañana, Tarde, Única, Nocturna, Fin de semana"></i>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Mañana, Tarde, Única, Nocturna, Fin de semana"></i>
                 </label>
-                <input type="number" id="jornadas" name="jornadas" class="form-input" min="1" max="5" value="1" required>
+                <input type="number" id="jornadas" name="jornadas" class="form-input" min="1" max="5" value="1"
+                  required>
                 <span class="input-hint">Jornadas en funcionamiento</span>
               </div>
 
@@ -312,10 +385,13 @@
               <div class="form-group full-width">
                 <label class="form-label" for="casos_reportados">
                   <span>Casos Actuales Reportados en la Sede (TEA, Aprendizaje o Psicosocial)</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Estudiantes actualmente registrados con condición foco en el SIMAT / DANE"></i>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Estudiantes actualmente registrados con condición foco en el SIMAT / DANE"></i>
                 </label>
-                <input type="number" id="casos_reportados" name="casos_reportados" class="form-input" min="0" max="500" value="0" required>
-                <span class="input-hint">Ingrese 0 si la sede no tiene ningún estudiante diagnosticado oficialmente</span>
+                <input type="number" id="casos_reportados" name="casos_reportados" class="form-input" min="0" max="500"
+                  value="0" required>
+                <span class="input-hint">Ingrese 0 si la sede no tiene ningún estudiante diagnosticado
+                  oficialmente</span>
               </div>
 
             </div>
@@ -329,12 +405,13 @@
 
         <!-- Tarjeta de Resultados (Mockup / Simulación de Respuesta de IA) -->
         <div class="results-card" id="resultsCard">
-          
+
           <!-- Estado Inicial (Placeholder antes del primer clic) -->
           <div class="results-placeholder" id="resultsPlaceholder">
             <i class="fas fa-laptop-code"></i>
             <h4>Esperando Parámetros de Sede</h4>
-            <p>Haga clic en <strong>"Analizar Sede Educativa"</strong> o elija un caso de demostración rápida para ejecutar la simulación de la IA.</p>
+            <p>Haga clic en <strong>"Analizar Sede Educativa"</strong> o elija un caso de demostración rápida para
+              ejecutar la simulación de la IA.</p>
           </div>
 
           <!-- Estado de Carga (Spinner animado) -->
@@ -346,7 +423,7 @@
 
           <!-- Contenedor de Resultados Generados -->
           <div class="results-content" id="resultsContent" style="display:none;">
-            
+
             <div class="results-header-tag">
               <div class="ai-stamp">
                 <i class="fas fa-robot"></i> EduTrack IA Model Engine
@@ -373,7 +450,8 @@
               <div class="prob-info">
                 <h5>Riesgo de Subregistro Estimado</h5>
                 <div class="prob-score" id="resProbScore">78%</div>
-                <span id="resProbSubtext" style="font-size:0.75rem; color:var(--slate-500); font-weight:500;">Riesgo de condiciones foco no registradas</span>
+                <span id="resProbSubtext" style="font-size:0.75rem; color:var(--slate-500); font-weight:500;">Riesgo de
+                  condiciones foco no registradas</span>
               </div>
               <div class="prob-bar-wrapper">
                 <div class="prob-bar-track">
@@ -407,9 +485,12 @@
             <div class="actions-box">
               <h5><i class="fas fa-tasks"></i> Recomendaciones Pedagógicas EduTrack</h5>
               <ul class="actions-list" id="resActionsList">
-                <li><i class="fas fa-arrow-right"></i> Solicitar docente orientador itinerante ante la Secretaría de Educación.</li>
-                <li><i class="fas fa-arrow-right"></i> Priorizar la sede para implementar el piloto de EduTrack (tamizaje docente en aula).</li>
-                <li><i class="fas fa-arrow-right"></i> Capacitar a los docentes de aula en señales tempranas de TEA y dificultades de lectoescritura.</li>
+                <li><i class="fas fa-arrow-right"></i> Solicitar docente orientador itinerante ante la Secretaría de
+                  Educación.</li>
+                <li><i class="fas fa-arrow-right"></i> Priorizar la sede para implementar el piloto de EduTrack
+                  (tamizaje docente en aula).</li>
+                <li><i class="fas fa-arrow-right"></i> Capacitar a los docentes de aula en señales tempranas de TEA y
+                  dificultades de lectoescritura.</li>
               </ul>
             </div>
 
@@ -434,8 +515,10 @@
     <section id="metodologia" class="methodology-section">
       <div class="section-header">
         <div>
-          <h3 class="section-title"><i class="fas fa-shield-alt"></i> Metodología y Fundamentación del Proyecto EduTrack</h3>
-          <p class="section-subtitle">Marco analítico, ético y normativo para la inteligencia artificial en educación inclusiva.</p>
+          <h3 class="section-title"><i class="fas fa-shield-alt"></i> Metodología y Fundamentación del Proyecto EduTrack
+          </h3>
+          <p class="section-subtitle">Marco analítico, ético y normativo para la inteligencia artificial en educación
+            inclusiva.</p>
         </div>
       </div>
 
@@ -443,8 +526,8 @@
         <div class="method-item">
           <h4><i class="fas fa-database"></i> Datos de Entrada Oficiales</h4>
           <p>
-            Utiliza microdatos agregados del Censo de Educación Formal (EDUC 2024) del DANE. 
-            El análisis opera estrictamente a nivel de sede escolar, evaluando variables institucionales 
+            Utiliza microdatos agregados del Censo de Educación Formal (EDUC 2024) del DANE.
+            El análisis opera estrictamente a nivel de sede escolar, evaluando variables institucionales
             como matrícula, personal docente, oferta de niveles y ubicación geográfica.
           </p>
         </div>
@@ -452,16 +535,18 @@
         <div class="method-item">
           <h4><i class="fas fa-network-wired"></i> Modelos Evaluados</h4>
           <p>
-            Se implementaron modelos de clasificación supervisada (Árbol de Decisión, Regresión Logística, 
-            Red Neuronal MLP y KNN) con AUC de 0.89, junto con modelos de regresión lineal para estimar la tasa esperada de casos foco.
+            Se implementaron modelos de clasificación supervisada (Árbol de Decisión, Regresión Logística,
+            Red Neuronal MLP y KNN) con AUC de 0.89, junto con modelos de regresión lineal para estimar la tasa esperada
+            de casos foco.
           </p>
         </div>
 
         <div class="method-item">
           <h4><i class="fas fa-user-shield"></i> Enfoque Ético y Protección de Datos</h4>
           <p>
-            EduTrack <strong>no diagnostica</strong> ni etiqueta a ningún menor. Actúa como un sistema de apoyo 
-            a la gestión pedagógica y directiva para priorizar recursos de orientación escolar, en estricto cumplimiento de la Ley 1581 de 2012 y el Decreto 1421 de 2017.
+            EduTrack <strong>no diagnostica</strong> ni etiqueta a ningún menor. Actúa como un sistema de apoyo
+            a la gestión pedagógica y directiva para priorizar recursos de orientación escolar, en estricto cumplimiento
+            de la Ley 1581 de 2012 y el Decreto 1421 de 2017.
           </p>
         </div>
       </div>
@@ -471,7 +556,8 @@
     <footer class="footer">
       <p>&copy; 2026 EduTrack · Sistema Inteligente de Detección de Subregistro Escolar.</p>
       <p class="footer-team">
-        Integrantes: Juan Fernando Jiménez Benjumea · Andrés David López Muñoz · Jhonatan Yepes Luna · Alberto José Castro Padilla · David Armando Olmos Moreno
+        Integrantes: Juan Fernando Jiménez Benjumea · Andrés David López Muñoz · Jhonatan Yepes Luna · Alberto José
+        Castro Padilla · David Armando Olmos Moreno
       </p>
       <p style="margin-top: 4px; font-size: 0.72rem; color: var(--slate-400);">
         Proyecto de Inteligencia Artificial (8vo Semestre) · Arquitectura Cloud
@@ -480,46 +566,8 @@
 
   </main>
 
-  <script>
-    // Configuración y Protección de Ruta de Supabase
-    const supabaseUrl = 'https://qkttfwezktegpbpyowah.supabase.co'; 
-    const supabaseKey = 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQOp';
-    const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-            window.location.href = 'login.html';
-        } else {
-            // Actualizar datos del usuario logueado en la interfaz (Navbar)
-            const userEmail = session.user.email;
-            const uiUserName = document.getElementById('uiUserName');
-            const uiUserRole = document.getElementById('uiUserRole');
-            const uiUserInst = document.getElementById('uiUserInst');
-            const uiUserInitial = document.getElementById('uiUserInitial');
-
-            // Intenta recuperar los datos visuales mapeados en login o usar defaults
-            const savedUser = JSON.parse(localStorage.getItem('eduTrackUser'));
-            
-            if (savedUser && savedUser.email === userEmail) {
-                uiUserName.textContent = savedUser.name;
-                uiUserRole.textContent = savedUser.role;
-                uiUserInst.title = savedUser.inst;
-                uiUserInitial.textContent = savedUser.name.charAt(0).toUpperCase();
-            } else {
-                uiUserName.textContent = userEmail.split('@')[0];
-                uiUserRole.textContent = 'Analista Autorizado';
-                uiUserInitial.textContent = userEmail.charAt(0).toUpperCase();
-            }
-        }
-    });
-
-    async function logout() {
-        await supabase.auth.signOut();
-        localStorage.removeItem('eduTrackUser');
-        window.location.href = 'login.html';
-    }
-  </script>
   <!-- Lógica en JavaScript del analizador -->
   <script src="script.js"></script>
 </body>
+
 </html>
