@@ -184,7 +184,6 @@
           showError("Credenciales incorrectas o usuario no registrado.");
           resetBtn('<i class="fas fa-sign-in-alt"></i> Iniciar Sesión');
         } else {
-          // Recuperar el nombre guardado previamente o usar uno por defecto
           const savedUsers = JSON.parse(localStorage.getItem('eduTrackUsersDict') || '{}');
           saveAndRedirect(email, savedUsers[email] || "Usuario EduTrack");
         }
@@ -196,13 +195,21 @@
         });
 
         if (error) {
-          const errorMsg = error.message.includes("already registered")
-            ? "Este correo ya está registrado. Inicia sesión."
-            : "La contraseña es muy débil (mínimo 6 caracteres).";
-          showError("Error al registrar: " + errorMsg);
+          // Traductor de errores reales de Supabase
+          let errorMsg = error.message;
+          if (error.message.includes("already registered")) {
+            errorMsg = "Este correo ya está registrado. Inicia sesión.";
+          } else if (error.message.includes("rate limit") || error.message.includes("over the email rate limit")) {
+            errorMsg = "Por seguridad, Supabase bloqueó temporalmente los registros (Límite de intentos). Espera unos minutos.";
+          } else if (error.message.includes("Signups not allowed")) {
+            errorMsg = "El registro de nuevos usuarios está desactivado en tu panel de Supabase.";
+          } else if (error.message.includes("weak")) {
+            errorMsg = "La contraseña es muy débil (mínimo 6 caracteres).";
+          }
+
+          showError("Error: " + errorMsg);
           resetBtn('<i class="fas fa-user-plus"></i> Registrarse en EduTrack');
         } else {
-          // Guardar el nombre en un diccionario local para recordarlo al iniciar sesión
           const savedUsers = JSON.parse(localStorage.getItem('eduTrackUsersDict') || '{}');
           savedUsers[email] = fullName;
           localStorage.setItem('eduTrackUsersDict', JSON.stringify(savedUsers));
