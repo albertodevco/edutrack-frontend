@@ -282,7 +282,7 @@
             </div>
           </div>
 
-          <!-- Formulario de Entrada de Datos -->
+    <!-- Formulario de Entrada de Datos -->
           <form id="eduTrackForm" autocomplete="off">
             <div class="form-grid">
 
@@ -357,7 +357,25 @@
                 <span class="input-hint">Área geográfica de la sede</span>
               </div>
 
-              <!-- 7. Sede Bilingüe -->
+              <!-- 7. Departamento (NUEVO) -->
+              <div class="form-group">
+                <label class="form-label" for="departamento">
+                  <span>Departamento</span>
+                </label>
+                <input type="text" id="departamento" name="departamento" class="form-input" placeholder="Ej. Antioquia" required>
+                <span class="input-hint">Ubicación regional</span>
+              </div>
+
+              <!-- 8. Municipio (NUEVO) -->
+              <div class="form-group">
+                <label class="form-label" for="municipio">
+                  <span>Municipio</span>
+                </label>
+                <input type="text" id="municipio" name="municipio" class="form-input" placeholder="Ej. Medellín" required>
+                <span class="input-hint">Entidad territorial local</span>
+              </div>
+
+              <!-- 9. Sede Bilingüe -->
               <div class="form-group">
                 <label class="form-label" for="bilingue">
                   <span>Sede Bilingüe</span>
@@ -369,7 +387,7 @@
                 <span class="input-hint">Programa bilingüe oficial</span>
               </div>
 
-              <!-- 8. Sede Etnoeducativa -->
+              <!-- 10. Sede Etnoeducativa -->
               <div class="form-group">
                 <label class="form-label" for="etnoeducativa">
                   <span>Sede Etnoeducativa</span>
@@ -381,17 +399,26 @@
                 <span class="input-hint">Enfoque étnico / afro / indígena</span>
               </div>
 
-              <!-- 9. Casos actuales reportados en la sede -->
-              <div class="form-group full-width">
-                <label class="form-label" for="casos_reportados">
-                  <span>Casos Actuales Reportados en la Sede (TEA, Aprendizaje o Psicosocial)</span>
+              <!-- 11. Casos Foco Reportados (N_FOCO) -->
+              <div class="form-group">
+                <label class="form-label" for="casos_foco">
+                  <span>Casos Foco (TEA, Apren, Psico)</span>
                   <i class="fas fa-question-circle tooltip-icon"
-                    title="Estudiantes actualmente registrados con condición foco en el SIMAT / DANE"></i>
+                    title="Estudiantes registrados con condiciones foco en SIMAT"></i>
                 </label>
-                <input type="number" id="casos_reportados" name="casos_reportados" class="form-input" min="0" max="500"
-                  value="0" required>
-                <span class="input-hint">Ingrese 0 si la sede no tiene ningún estudiante diagnosticado
-                  oficialmente</span>
+                <input type="number" id="casos_foco" name="casos_foco" class="form-input" min="0" max="500" value="0" required>
+                <span class="input-hint">Ingrese 0 si no hay diagnósticos</span>
+              </div>
+
+              <!-- 12. Total Condiciones (N_COND_TOTAL - NUEVO) -->
+              <div class="form-group">
+                <label class="form-label" for="casos_total">
+                  <span>Total Cualquier Condición</span>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Total de estudiantes con cualquier tipo de discapacidad o trastorno reportado"></i>
+                </label>
+                <input type="number" id="casos_total" name="casos_total" class="form-input" min="0" max="500" value="0" required>
+                <span class="input-hint">Físicas, cognitivas, múltiples, etc.</span>
               </div>
 
             </div>
