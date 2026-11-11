@@ -1,99 +1,138 @@
-# 🎓 EduTrack - Prototipo Web para Detección de Subregistro NEE (IA)
+# 🎓 EduTrack · Frontend
 
-EduTrack es una solución de Inteligencia Artificial orientada a la gestión educativa inclusiva en Colombia. Su objetivo es detectar el **posible subregistro** de estudiantes con necesidades educativas especiales (**TEA**, **trastornos de aprendizaje/comportamiento** o **psicosociales**) en sedes educativas públicas, apoyando a directivos y docentes en la toma de decisiones oportunas.
+Panel web para estimar la probabilidad de presencia de casos foco (TEA,
+trastornos del aprendizaje y condiciones psicosociales) en sedes educativas de
+Colombia, usando el modelo servido por el backend Flask.
 
----
+## Arquitectura
 
-## 🚀 Acceso Inmediato en XAMPP
-
-Los archivos ya están instalados y sincronizados tanto en la carpeta del proyecto como en el servidor Apache de XAMPP:
-
-* **URL de Acceso en Navegador:**  
-  👉 **`http://localhost/edutrack`**  
-  *(o `http://localhost/edutrack/login.php`)*
-
-> **Nota:** Apache y MySQL en XAMPP ya se encuentran en ejecución. Solo abra la URL en su navegador (Google Chrome, Edge, Firefox, etc.).
-
----
-
-## 🔑 Credenciales de Acceso Demo (Login con 1 Clic)
-
-La pantalla de inicio de sesión (`login.php`) incluye botones de **acceso rápido con 1 solo clic** para los siguientes roles de demostración:
-
-| Rol | Correo Institucional | Contraseña | Perfil en el Sistema |
-|---|---|---|---|
-| **Rector / Directivo** | `rector@edutrack.edu.co` | `rector123` | Lic. Alberto Castro Padilla |
-| **Docente Orientadora** | `orientador@edutrack.edu.co` | `orientador123` | Dra. María Jimena Yepes |
-| **Analista de Calidad / IA** | `analista@edutrack.edu.co` | `analista123` | Ing. Juan Fernando Jiménez |
-
-*(También se puede ingresar con cualquier usuario y contraseña para pruebas libres).*
-
----
-
-## 📊 Características de la Interfaz
-
-### 1. Dashboard Nacional Previo (DANE Educación Formal 2024)
-Antes del formulario se despliegan indicadores de contexto nacional:
-- **43.120 Sedes Oficiales Analizadas** a nivel nacional.
-- **89.4% Sedes sin Docente Orientador** (brecha crítica de personal especializado).
-- **Gráfico 1 (Chart.js):** Brecha de reporte y dotación docente entre Sedes Urbanas vs. Sedes Rurales.
-- **Gráfico 2 (Chart.js):** Detección tardía por ciclo educativo (Preescolar vs. Primaria vs. Secundaria vs. Media).
-
-### 2. Formulario de Entrada (Variables del Modelo de IA)
-Permite ingresar las 9 variables estructurales entrenadas en el modelo:
-1. **Matrícula Total** (Número de estudiantes).
-2. **Cantidad de Docentes de Aula** (Número).
-3. **Cantidad de Docentes Orientadores** (Número).
-4. **Número de Niveles Educativos** (1 a 5).
-5. **Número de Jornadas Operativas** (1 a 4).
-6. **Zona Geográfica** (Desplegable: Urbana / Rural).
-7. **Sede Bilingüe** (Desplegable: Sí / No).
-8. **Sede Etnoeducativa** (Desplegable: Sí / No).
-9. **Casos Actuales Reportados en la Sede** (Número).
-
-### 3. Casos de Prueba Rápida (Botones de Presets para Sustentación)
-Sobre el formulario encontrará 3 botones para cargar escenarios listos para sustentar al profesor:
-- 🔴 **Caso 1: Prioridad Alta (Subregistro Crítico)**  
-  *Sede Rural sin orientador, 210 alumnos y 0 casos reportados.*  
-  👉 **Alerta:** *"Alerta de Posible Subregistro y Falta de Apoyo"*, Riesgo de subregistro estimado ~78% (crítico), recomendación de intervención prioritaria.
-- 🟡 **Caso 2: Prioridad Media (Casos sin Apoyo)**  
-  *Sede Urbana con 650 alumnos, 5 casos reportados pero 0 orientadores.*  
-  👉 **Alerta:** *"Casos sin Apoyo Profesional"*, Riesgo de subregistro moderado ~43%, sobrecarga pedagógica docente.
-- 🟢 **Caso 3: Sin Alerta Crítica (Monitoreo Normal)**  
-  *Sede con 540 alumnos, 2 orientadores y 7 casos reportados.*  
-  👉 **Alerta:** *"Sede en Monitoreo / Sin Alerta Crítica"*, Riesgo de subregistro mínimo ~8%, relación coherente de casos y orientación.
-
-### 4. Panel de Resultados de la Simulación
-- **Medidor de Riesgo de Subregistro Estimado** con barra de porcentaje dinámica codificada por color (Rojo, Amarillo, Verde).
-- **Probabilidad Poblacional de Presencia (Modelo Supervisado DANE 2024)**: Muestra la probabilidad estadística de que existan condiciones foco en la sede por sus factores estructurales.
-- **Banners de Alerta Visual** codificados por nivel de prioridad según las reglas del notebook.
-- **Estimación de Casos Foco Esperados** mediante la regresión lineal simple del DANE (~1.25 casos por cada 100 matriculados).
-- **Ratio de Alumnos por Docente de Aula** (indicador de saturación observacional).
-- **Recomendaciones Pedagógicas y Administrativas** según la normativa colombiana (Decreto 1421 de 2017).
-- **Botón de Impresión de Ficha:** Permite generar un reporte limpio en PDF para archivo institucional.
-
----
-
-## 📁 Estructura del Código
-
-```text
-├── index.php         # Panel principal: Dashboard, Formulario y Panel de Resultados
-├── login.php         # Pantalla de acceso con selector de credenciales rápidas
-├── logout.php        # Destrucción de sesión segura de PHP
-├── style.css         # Diseño visual institucional, paleta académica, responsive y print
-├── script.js         # Lógica interactiva: Chart.js, presets y simulación del modelo de IA
-├── README.md         # Documentación de uso y sustentación
-└── RECURSOS/         # Notebook de modelado (EduTrack_Proyecto 1.2.ipynb) y entrega PDF
+```
+login.html (Supabase Auth)
+      │  sesión
+      ▼
+index.html (dashboard + formulario + resultados)
+      │  fetch JSON
+      ▼
+API Flask en Render  →  DecisionTreeClassifier (41 features)
+      │
+      └── cada envío se guarda en Supabase (tabla analisis_sede)
 ```
 
----
+## Archivos
 
-## 👥 Integrantes del Proyecto
-- **Juan Fernando Jiménez Benjumea**
-- **Andrés David López Muñoz**
-- **Jhonatan Yepes Luna**
-- **Alberto José Castro Padilla**
-- **David Armando Olmos Moreno**
+| Archivo | Rol |
+|---|---|
+| `config.js` | URL de Supabase, clave publicable, URL de la API y tabla |
+| `config.example.js` | Plantilla de `config.js` |
+| `login.html` | Inicio de sesión y registro con Supabase |
+| `index.html` | Dashboard, analizador, resultados e historial |
+| `script.js` | Gráficos, presets, validación, fetch, render e historial |
+| `style.css` | Diseño institucional, responsive e impresión |
+| `favicon.svg` | Icono |
+| `supabase/migrations/001_analisis_sede.sql` | Tabla y políticas RLS |
 
-*Asignatura: Inteligencia Artificial (8vo Semestre)*
+Este repositorio se despliega como sitio estático. La API vive en el
+repositorio **`edutrack-backend`** (Render).
 
+## Configuración
+
+Edita `config.js`:
+
+```js
+window.EDUTRACK_CONFIG = {
+  SUPABASE_URL: 'https://TU-PROYECTO.supabase.co',
+  SUPABASE_ANON_KEY: 'TU_CLAVE_PUBLICABLE',
+  API_URL: 'https://TU-SERVICIO.onrender.com',
+  TABLA_ANALISIS: 'analisis_sede'
+};
+```
+
+## Base de datos (Supabase)
+
+1. Abre el SQL Editor del proyecto.
+2. Ejecuta `supabase/migrations/001_analisis_sede.sql`.
+3. Verifica que la tabla tenga RLS activo. Las políticas permiten a cada
+   usuario autenticado insertar y leer **solo sus** análisis.
+4. En Authentication → Providers, mantén Email habilitado. Si exiges
+   confirmación por correo, el registro mostrará el aviso correspondiente y no
+   entrará en bucle.
+
+## Ejecución local
+
+No abras los HTML con `file://`: Supabase Auth y el fetch necesitan un origen
+HTTP.
+
+```bash
+python -m http.server 8080
+# http://localhost:8080/login.html
+```
+
+El backend debe estar corriendo (por defecto en `http://localhost:5000`) y
+`API_URL` debe apuntar a él.
+
+## Formulario
+
+| Campo | Variable del modelo | Notas |
+|---|---|---|
+| Matrícula | `MATRICULA` | Entrada dominante (76,8 % de importancia) |
+| Docentes | `N_DOCENTES` | Debe ser ≥ 1 |
+| Orientadores | `N_ORIENTADORES` | |
+| Niveles | `N_NIVELES` | 1 – 6 |
+| Jornadas | `N_JORNADAS` | Importancia 0, columna obligatoria |
+| Zona | `ZONA_RURAL` | Rural = 1, Urbana = 0 |
+| Departamento | `DEP_*` | 33 valores; Amazonas = categoría base |
+| Bilingüe | `BILINGUE_SI` | Importancia 0, columna obligatoria |
+| Etnoeducativa | `ETNOEDUC_SI` | |
+
+`EST_POR_DOCENTE` no se pide: lo calcula el backend.
+
+## Casos de demostración
+
+Los botones llenan el formulario y ejecutan la API real. Valores esperados con
+los artefactos actuales (tolerancia `1e-9`):
+
+| Caso | Entrada | Probabilidad | Clase |
+|---|---|---|---|
+| Rural pequeña | 60 / 3 / 0 · Amazonas | 11.71 % | 0 |
+| Rural intermedia | 300 / 20 / 1 · Chocó | 43.35 % | 0 |
+| Urbana grande | 950 / 34 / 2 · Antioquia | 77.85 % | 1 |
+
+## Resultados
+
+- Se muestra **la probabilidad cruda** que devuelve la API, sin ajustes por
+  zona ni redondeos del valor (solo formato de presentación).
+- El banner de prioridad es una **banda operativa** (≥ 70 % alta, ≥ 40 % media,
+  < 40 % monitoreo), no una salida del modelo.
+- Se listan los parámetros exactos y la dummy de departamento usada.
+- Las recomendaciones son sugerencias institucionales, no un diagnóstico.
+
+## Historial y dashboard
+
+Cada envío se inserta en `analisis_sede`; el KPI “Análisis registrados” y la
+sección Historial leen las últimas 10 filas de la cuenta autenticada. Si la
+tabla o las políticas no existen, la app sigue funcionando y muestra un aviso.
+
+## Subir a GitHub
+
+El repositorio ya está inicializado y con los cambios preparados:
+
+```powershell
+cd "C:\Users\Admin\Documents\Inteligencia Artificial\edutrack-frontend"
+git add -A
+git commit -m "feat: formulario de 9 campos, resultados reales del modelo e historial Supabase"
+git push origin main
+```
+
+## Despliegue
+
+1. Despliega primero el backend actualizado (`edutrack-backend`) en Render.
+2. Publica este repositorio en un hosting estático (Vercel, Netlify o GitHub
+   Pages). En Vercel: *Root Directory* vacío, *Framework* `Other`, sin build.
+3. Actualiza `API_URL` y las credenciales en `config.js` y haz commit: el
+   hosting redepliega solo.
+4. Añade el dominio del frontend a `ALLOWED_ORIGINS` del backend si restringes
+   CORS.
+5. Ejecuta `supabase/migrations/001_analisis_sede.sql` en el SQL Editor.
+
+> La clave de Supabase es una `publishable key`: puede estar en el navegador.
+> La seguridad real depende de RLS. Nunca subas la clave `service_role`.

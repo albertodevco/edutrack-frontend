@@ -1,31 +1,108 @@
 /**
- * EduTrack - Inteligencia Artificial para la Detección de Subregistro NEE
- * Lógica Front-End, Gráficos Chart.js y Conexión con Modelo Machine Learning Real
+ * EduTrack · Lógica del dashboard y del analizador.
+ *
+ * Reglas de oro:
+ * 1. La probabilidad que se muestra es EXACTAMENTE la que devuelve la API.
+ * 2. No se inventan casos esperados, riesgos ni ajustes por zona.
+ * 3. El backend calcula EST_POR_DOCENTE y las dummies de departamento.
  */
+
+const CFG = window.EDUTRACK_CONFIG || {};
+const API_URL = String(CFG.API_URL || '').replace(/\/+$/, '');
+const TABLA_ANALISIS = CFG.TABLA_ANALISIS || 'analisis_sede';
+
+const PRESETS = {
+  rural_pequena: {
+    matricula: 60,
+    docentes: 3,
+    orientadores: 0,
+    niveles: 2,
+    jornadas: 1,
+    zona: 'rural',
+    bilingue: false,
+    etnoeducativa: false,
+    departamento: 'Amazonas'
+  },
+  rural_intermedia: {
+    matricula: 300,
+    docentes: 20,
+    orientadores: 1,
+    niveles: 3,
+    jornadas: 2,
+    zona: 'rural',
+    bilingue: false,
+    etnoeducativa: false,
+    departamento: 'Chocó'
+  },
+  urbana_grande: {
+    matricula: 950,
+    docentes: 34,
+    orientadores: 2,
+    niveles: 4,
+    jornadas: 2,
+    zona: 'urbana',
+    bilingue: false,
+    etnoeducativa: false,
+    departamento: 'Antioquia'
+  }
+};
+
+const BANDAS = {
+  alta: {
+    color: 'high-priority',
+    fill: 'red',
+    badge: 'PRIORIDAD ALTA',
+    icon: 'fa-triangle-exclamation',
+    titulo: 'Probabilidad alta de presencia de casos foco',
+    acciones: [
+      'Priorizar la sede en el plan de tamizaje y en la asignación de orientación escolar.',
+      'Verificar el registro de estudiantes con condiciones foco en el módulo de discapacidad del SIMAT.',
+      'Capacitar a los docentes de aula en señales tempranas de TEA y dificultades de lectoescritura.'
+    ]
+  },
+  media: {
+    color: 'medium-priority',
+    fill: 'yellow',
+    badge: 'PRIORIDAD MEDIA',
+    icon: 'fa-user-clock',
+    titulo: 'Probabilidad media de presencia de casos foco',
+    acciones: [
+      'Programar una revisión interna de casos con el comité de inclusión y convivencia.',
+      'Articular apoyo psicosocial con el colegio nodo o el centro de salud más cercano.',
+      'Revisar la formulación y el seguimiento de los PIAR vigentes.'
+    ]
+  },
+  baja: {
+    color: 'low-priority',
+    fill: 'green',
+    badge: 'MONITOREO',
+    icon: 'fa-check-circle',
+    titulo: 'Probabilidad baja de presencia de casos foco',
+    acciones: [
+      'Mantener el seguimiento periódico en el comité de inclusión y convivencia.',
+      'Conservar actualizadas las novedades de estudiantes en el SIMAT.',
+      'Fortalecer la articulación entre docentes de aula y orientación escolar.'
+    ]
+  }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializar Gráficos de Demostración del Dashboard
   initDashboardCharts();
-
-  // Escuchar envío del formulario de análisis
-  const form = document.getElementById('eduTrackForm');
-  if (form) {
-    form.addEventListener('submit', handleAnalysisSubmit);
-  }
+  initFormulario();
+  initSwitches();
+  initHistorial();
 });
 
-/**
- * 1. Inicialización de Gráficos con Chart.js
- * Basado en las estadísticas reales del DANE (Censo Educación Formal 2024)
- */
+/* ------------------------------------------------------------------ */
+/* 1. Gráficos del dashboard                                           */
+/* ------------------------------------------------------------------ */
+
 function initDashboardCharts() {
-  // Verificar si Chart.js está cargado
   if (typeof Chart === 'undefined') {
     console.warn('Chart.js no está disponible. Gráficos en modo fallback.');
     return;
   }
 
-  // Gráfico 1: Brecha Urbana vs Rural
   const ctxZona = document.getElementById('chartBrechaZona');
   if (ctxZona) {
     new Chart(ctxZona, {
@@ -65,20 +142,15 @@ function initDashboardCharts() {
           y: {
             beginAtZero: true,
             max: 100,
-            ticks: {
-              callback: (val) => val + '%'
-            },
+            ticks: { callback: (val) => val + '%' },
             grid: { color: '#f1f5f9' }
           },
-          x: {
-            grid: { display: false }
-          }
+          x: { grid: { display: false } }
         }
       }
     });
   }
 
-  // Gráfico 2: Diagnóstico tardío por Nivel Educativo
   const ctxNivel = document.getElementById('chartNivelEducativo');
   if (ctxNivel) {
     new Chart(ctxNivel, {
@@ -131,372 +203,471 @@ function initDashboardCharts() {
           y: {
             beginAtZero: true,
             grid: { color: '#f1f5f9' },
-            ticks: {
-              callback: (val) => val.toLocaleString()
-            }
+            ticks: { callback: (val) => val.toLocaleString() }
           },
-          x: {
-            grid: { display: false }
-          }
+          x: { grid: { display: false } }
         }
       }
     });
   }
 }
 
-/**
- * 2. Cargar Presets de Demostración con 1 Clic
- */
-function loadPreset(type) {
+/* ------------------------------------------------------------------ */
+/* 2. Formulario, presets y envío                                      */
+/* ------------------------------------------------------------------ */
+
+function initFormulario() {
   const form = document.getElementById('eduTrackForm');
   if (!form) return;
-
-  if (type === 'alta') {
-    form.matricula.value = 210;
-    form.docentes.value = 8;
-    form.orientadores.value = 0;
-    form.niveles.value = 2;
-    form.jornadas.value = 1;
-    form.zona.value = 'Rural';
-    form.bilingue.value = 'No';
-    form.etnoeducativa.value = 'No';
-    form.casos_reportados.value = 0;
-  } else if (type === 'media') {
-    form.matricula.value = 650;
-    form.docentes.value = 24;
-    form.orientadores.value = 0;
-    form.niveles.value = 4;
-    form.jornadas.value = 2;
-    form.zona.value = 'Urbana';
-    form.bilingue.value = 'No';
-    form.etnoeducativa.value = 'No';
-    form.casos_reportados.value = 5;
-  } else if (type === 'baja') {
-    form.matricula.value = 540;
-    form.docentes.value = 20;
-    form.orientadores.value = 2;
-    form.niveles.value = 3;
-    form.jornadas.value = 2;
-    form.zona.value = 'Urbana';
-    form.bilingue.value = 'No';
-    form.etnoeducativa.value = 'No';
-    form.casos_reportados.value = 7;
-  }
-
-  const submitBtn = document.getElementById('btnSubmitAnalysis');
-  if (submitBtn) {
-    submitBtn.classList.add('pulse');
-    setTimeout(() => submitBtn.classList.remove('pulse'), 600);
-  }
+  form.addEventListener('submit', handleAnalysisSubmit);
 }
 
-/**
- * 3. Procesamiento y Conexión con el Modelo de IA (Flask / Render)
- */
-function handleAnalysisSubmit(e) {
-  e.preventDefault();
+function initSwitches() {
+  ['bilingue', 'etnoeducativa'].forEach((id) => {
+    const checkbox = document.getElementById(id);
+    const texto = document.getElementById(id + 'Text');
+    if (!checkbox || !texto) return;
+    const sincronizar = () => { texto.textContent = checkbox.checked ? 'Sí' : 'No'; };
+    checkbox.addEventListener('change', sincronizar);
+    sincronizar();
+  });
+}
 
-  const form = e.target;
+function loadPreset(tipo) {
+  const preset = PRESETS[tipo];
+  if (!preset) return;
 
-  // Extracción de valores
-  const matricula = parseFloat(form.matricula.value) || 0;
-  const docentes = parseFloat(form.docentes.value) || 0;
-  const orientadores = parseFloat(form.orientadores.value) || 0;
-  const niveles = parseFloat(form.niveles.value) || 1;
-  const jornadas = parseFloat(form.jornadas.value) || 1;
-  const zona = form.zona.value; // 'Urbana' | 'Rural'
-  const bilingue = form.bilingue.value; // 'Sí' | 'No'
-  const etnoeducativa = form.etnoeducativa.value; // 'Sí' | 'No'
-  const casosReportados = parseFloat(form.casos_reportados.value) || 0;
+  Object.entries(preset).forEach(([campo, valor]) => {
+    const el = document.getElementById(campo);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = Boolean(valor);
+    else el.value = String(valor);
+  });
 
-  // Ratio estudiantes por docente
-  const ratioEstDocente = docentes > 0 ? (matricula / docentes).toFixed(1) : matricula;
+  document.getElementById('bilingueText').textContent = preset.bilingue ? 'Sí' : 'No';
+  document.getElementById('etnoeducativaText').textContent = preset.etnoeducativa ? 'Sí' : 'No';
 
-  // UI: Mostrar animación de carga
+  const form = document.getElementById('eduTrackForm');
+  form.requestSubmit();
+}
+
+function leerFormulario() {
+  const crudo = (id) => document.getElementById(id).value.trim();
+
+  const numericos = [
+    ['matricula', 'Matrícula', 0, 100000],
+    ['docentes', 'Docentes', 1, 5000],
+    ['orientadores', 'Orientadores', 0, 500],
+    ['niveles', 'Niveles', 1, 6],
+    ['jornadas', 'Jornadas', 1, 5]
+  ];
+
+  const errores = [];
+  const payload = {
+    zona: document.getElementById('zona').value,
+    bilingue: document.getElementById('bilingue').checked,
+    etnoeducativa: document.getElementById('etnoeducativa').checked,
+    departamento: document.getElementById('departamento').value
+  };
+
+  numericos.forEach(([campo, etiqueta, min, max]) => {
+    const texto = crudo(campo);
+    if (texto === '') {
+      errores.push(`${etiqueta} es obligatorio.`);
+      return;
+    }
+    const valor = Number(texto);
+    if (!Number.isInteger(valor) || valor < min || valor > max) {
+      errores.push(`${etiqueta} debe ser un entero entre ${min} y ${max}.`);
+      return;
+    }
+    payload[campo] = valor;
+  });
+
+  return { payload, errores };
+}
+
+async function handleAnalysisSubmit(evento) {
+  evento.preventDefault();
+
+  const { payload, errores } = leerFormulario();
+  if (errores.length) {
+    mostrarErrorFormulario(errores.join(' '));
+    return;
+  }
+  ocultarErrorFormulario();
+
+  if (!API_URL) {
+    mostrarError('Falta configurar API_URL en config.js.');
+    return;
+  }
+
   const placeholder = document.getElementById('resultsPlaceholder');
   const loading = document.getElementById('resultsLoading');
   const content = document.getElementById('resultsContent');
-  const submitBtn = document.getElementById('btnSubmitAnalysis');
+  const errorBox = document.getElementById('resultsError');
+  const boton = document.getElementById('btnSubmitAnalysis');
 
   if (placeholder) placeholder.style.display = 'none';
   if (content) content.style.display = 'none';
-  if (loading) {
-    loading.style.display = 'block';
-    // Reiniciar mensaje de error si existía
-    loading.innerHTML = `
-      <div class="spinner-container" style="text-align: center; padding: 2rem;">
-        <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--primary);"></i>
-        <p style="margin-top: 1rem; color: var(--secondary);">Consultando motor de Machine Learning...</p>
-      </div>`;
+  if (errorBox) errorBox.style.display = 'none';
+  if (loading) loading.style.display = 'block';
+
+  if (boton) {
+    boton.disabled = true;
+    boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando con el modelo...';
   }
 
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando con Modelo IA...';
-  }
-
-  // --- PREPARAR DATOS PARA EL BACKEND PYTHON ---
-  const dataToSend = {
-    matricula: matricula,
-    docentes: docentes,
-    orientadores: orientadores,
-    niveles: niveles,
-    jornadas: jornadas,
-    // Normalizar texto para Python (ej. "Rural" -> "rural", "Sí" -> "si")
-    zona: zona.toLowerCase(),
-    bilingue: bilingue.toLowerCase().replace('í', 'i'),
-    etno: etnoeducativa.toLowerCase().replace('í', 'i')
-  };
-
-  // ⚠️ CAMBIA ESTA URL: 
-  // Si usas XAMPP local usa: 'http://localhost:5000/predecir'
-  // Si usas nube usa: 'https://edutrack-api.onrender.com/predecir'
-  const API_URL = 'https://ia-edutrack.onrender.com/predecir';
-
-  // --- PETICIÓN FETCH A LA IA ---
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dataToSend)
-  })
-    .then(response => {
-      if (!response.ok) throw new Error('Error en la comunicación con el servidor IA');
-      return response.json();
-    })
-    .then(data => {
-      if (data.error) throw new Error(data.error);
-
-      // 4. Recibir Probabilidad Real del Árbol de Decisión / Regresión Logística
-      let probPresencia = data.probabilidad;
-
-      // Ajuste contextual para mantener coherencia pedagógica en la UI
-      if (matricula >= 180 && zona === 'Rural') {
-        probPresencia = Math.max(0.78, Math.min(0.88, probPresencia));
-      } else if (matricula < 30) {
-        probPresencia = Math.min(0.38, Math.max(0.12, probPresencia));
-      }
-
-      const probPresenciaPct = Math.round(probPresencia * 100);
-
-      // 5. Estimación de casos esperados según Regresión Lineal Simple DANE
-      const casosEsperados = Math.max(1, Math.round(matricula * 0.0125));
-
-      // 6. Cálculo del Riesgo de Condiciones Foco No Registradas (Riesgo de Subregistro)
-      let riesgoSubregistro = 0;
-      let subtituloRiesgo = '';
-
-      if (casosReportados === 0) {
-        if (orientadores === 0) {
-          if (probPresenciaPct >= 70) {
-            riesgoSubregistro = Math.max(70, Math.min(95, probPresenciaPct));
-            subtituloRiesgo = 'Riesgo crítico de subregistro por falta de apoyo y 0 reportes';
-          } else {
-            riesgoSubregistro = Math.max(10, Math.min(65, Math.round(probPresencia * 85)));
-            subtituloRiesgo = 'Riesgo bajo-moderado (sede pequeña con baja probabilidad esperada)';
-          }
-        } else {
-          riesgoSubregistro = Math.max(20, Math.min(48, Math.round(probPresencia * 42)));
-          subtituloRiesgo = 'Riesgo moderado (sede con orientación profesional en aula)';
-        }
-      } else {
-        if (casosReportados >= casosEsperados) {
-          if (orientadores > 0) {
-            riesgoSubregistro = Math.max(4, Math.min(12, Math.round(8 - Math.min(4, casosReportados - casosEsperados))));
-            subtituloRiesgo = 'Riesgo mínimo (reporte adecuado y orientación activa)';
-          } else {
-            riesgoSubregistro = Math.max(20, Math.min(35, Math.round(24 + (probPresencia * 6))));
-            subtituloRiesgo = 'Riesgo bajo-moderado (casos identificados pero sin orientador)';
-          }
-        } else {
-          const ratioDeficit = (casosEsperados - casosReportados) / casosEsperados;
-          if (orientadores === 0) {
-            riesgoSubregistro = Math.max(35, Math.min(65, Math.round(30 + (ratioDeficit * 35))));
-            subtituloRiesgo = 'Riesgo medio-alto de subregistro parcial sin orientador';
-          } else {
-            riesgoSubregistro = Math.max(15, Math.min(35, Math.round(15 + (ratioDeficit * 20))));
-            subtituloRiesgo = 'Riesgo moderado de subregistro parcial con orientador';
-          }
-        }
-      }
-
-      const riesgoSubregistroPct = Math.round(riesgoSubregistro);
-
-      // 7. Evaluación del Sistema de Alertas
-      let alertType = 'baja';
-      let alertTitle = '';
-      let alertBadgeText = '';
-      let alertMessage = '';
-      let alertColorClass = '';
-      let fillClass = '';
-
-      if (casosReportados === 0 && orientadores === 0 && probPresenciaPct >= 70) {
-        alertType = 'alta';
-        alertColorClass = 'high-priority';
-        fillClass = 'red';
-        alertBadgeText = 'PRIORIDAD ALTA - ACCIÓN URGENTE';
-        alertTitle = 'Alerta de Posible Subregistro y Falta de Apoyo';
-        alertMessage = `La sede educativa reporta 0 casos de estudiantes con TEA, dificultades de aprendizaje o psicosociales y no cuenta con docentes orientadores. Por su matrícula (${matricula} alumnos), el modelo de IA estima una probabilidad de presencia del <strong>${probPresenciaPct}%</strong> (~${casosEsperados} casos esperados), calculando un riesgo de subregistro del <strong>${riesgoSubregistroPct}%</strong>. Se sugiere priorizarla para la implementación de EduTrack y vinculación de orientación escolar.`;
-      } else if (casosReportados > 0 && orientadores === 0) {
-        alertType = 'media';
-        alertColorClass = 'medium-priority';
-        fillClass = 'yellow';
-        alertBadgeText = 'PRIORIDAD MEDIA - CASOS DESATENDIDOS';
-        alertTitle = 'Casos sin Apoyo Profesional';
-        alertMessage = `La sede reporta <strong>${casosReportados} caso(s)</strong> activo(s) con necesidades educativas especiales (de ~${casosEsperados} esperados), pero cuenta con <strong>0 docentes orientadores</strong>. El riesgo de condiciones no registradas se estima en <strong>${riesgoSubregistroPct}%</strong>. Los docentes de aula están asumiendo la atención pedagógica sin acompañamiento psicosocial para los Planes Individuales de Ajustes Razonables (PIAR).`;
-      } else if (casosReportados === 0 && probPresenciaPct >= 70 && orientadores > 0) {
-        alertType = 'media';
-        alertColorClass = 'medium-priority';
-        fillClass = 'yellow';
-        alertBadgeText = 'PRIORIDAD MEDIA - VERIFICACIÓN INTERNA';
-        alertTitle = 'Posible Subregistro en Proceso';
-        alertMessage = `La sede no reporta casos a pesar de que el modelo supervisado estima una probabilidad de presencia del <strong>${probPresenciaPct}%</strong>. Dado que la sede cuenta con orientador (${orientadores}), el riesgo de subregistro se modera al <strong>${riesgoSubregistroPct}%</strong>; se recomienda una jornada de tamizaje observacional en aula junto a los docentes para validar posibles casos no registrados en el SIMAT.`;
-      } else {
-        alertType = 'baja';
-        alertColorClass = 'low-priority';
-        fillClass = 'green';
-        alertBadgeText = 'SIN ALERTA CRÍTICA - ESTADO COHERENTE';
-        alertTitle = 'Sede en Monitoreo / Sin Alerta Crítica';
-        alertMessage = `La sede presenta acompañamiento profesional de orientación escolar (${orientadores} docente(s) orientador(es)) y un reporte adecuado de casos (${casosReportados} reportados vs ~${casosEsperados} estimados según matrícula, probabilidad IA: <strong>${probPresenciaPct}%</strong>). El riesgo de condiciones foco no registradas se mantiene en un nivel mínimo controlado del <strong>${riesgoSubregistroPct}%</strong>.`;
-      }
-
-      // 8. Renderizar en la Interfaz de Resultados
-      renderResults({
-        riesgoSubregistroPct,
-        probPresenciaPct,
-        subtituloRiesgo,
-        fillClass,
-        alertColorClass,
-        alertBadgeText,
-        alertTitle,
-        alertMessage,
-        matricula,
-        casosReportados,
-        casosEsperados,
-        orientadores,
-        ratioEstDocente,
-        alertType
-      });
-
-      // Restaurar UI
-      if (loading) loading.style.display = 'none';
-      if (content) content.style.display = 'block';
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-brain"></i> Analizar Sede Educativa';
-      }
-
-      // Scroll suave
-      if (window.innerWidth < 992) {
-        const resultsCard = document.getElementById('resultsCard');
-        if (resultsCard) resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    })
-    .catch(error => {
-      // --- MANEJO DE ERRORES DE LA IA ---
-      console.error("Error contactando la IA:", error);
-      if (loading) {
-        loading.innerHTML = `
-        <div style="color: #e74c3c; text-align: center; padding: 2rem;">
-          <i class="fas fa-exclamation-triangle fa-3x" style="margin-bottom: 1rem;"></i>
-          <h3>Error de Conexión</h3>
-          <p>No se pudo conectar con el motor de Inteligencia Artificial.</p>
-          <p style="font-size: 0.9rem; color: #7f8c8d; margin-top: 10px;">Verifica que el servidor Flask (app.py) esté corriendo en el puerto 5000 o que la URL de Render sea correcta.</p>
-        </div>`;
-      }
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-brain"></i> Reintentar Análisis';
-      }
+  try {
+    const respuesta = await fetch(`${API_URL}/predecir`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
-}
 
-/**
- * 8. Renderizado del DOM de Resultados
- */
-function renderResults(data) {
-  const banner = document.getElementById('resAlertBanner');
-  if (banner) banner.className = `alert-banner ${data.alertColorClass}`;
+    const cuerpo = await respuesta.json().catch(() => null);
 
-  const badge = document.getElementById('resAlertBadge');
-  if (badge) badge.textContent = data.alertBadgeText;
+    if (!respuesta.ok) {
+      const error = new Error(formatearDetalle(cuerpo && cuerpo.detail));
+      error.esValidacion = respuesta.status === 422;
+      throw error;
+    }
 
-  const title = document.getElementById('resAlertTitle');
-  if (title) title.textContent = data.alertTitle;
+    renderResultados(cuerpo, payload);
+    if (loading) loading.style.display = 'none';
 
-  const msg = document.getElementById('resAlertMessage');
-  if (msg) msg.innerHTML = data.alertMessage;
-
-  const iconWrapper = document.getElementById('resAlertIcon');
-  if (iconWrapper) {
-    if (data.alertType === 'alta') iconWrapper.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-    else if (data.alertType === 'media') iconWrapper.innerHTML = '<i class="fas fa-user-clock"></i>';
-    else iconWrapper.innerHTML = '<i class="fas fa-check-circle"></i>';
-  }
-
-  const score = document.getElementById('resProbScore');
-  if (score) score.textContent = `${data.riesgoSubregistroPct}%`;
-
-  const subtext = document.getElementById('resProbSubtext');
-  if (subtext) subtext.textContent = data.subtituloRiesgo;
-
-  const barFill = document.getElementById('resProbBarFill');
-  if (barFill) {
-    barFill.className = `prob-bar-fill ${data.fillClass}`;
-    barFill.style.width = '0%';
-    setTimeout(() => { barFill.style.width = `${data.riesgoSubregistroPct}%`; }, 50);
-  }
-
-  const statCasos = document.getElementById('resStatCasos');
-  if (statCasos) statCasos.textContent = `${data.casosReportados} / ~${data.casosEsperados}`;
-
-  const statProb = document.getElementById('resStatProbPresencia');
-  if (statProb) statProb.textContent = `${data.probPresenciaPct}%`;
-
-  const statRatio = document.getElementById('resStatRatio');
-  if (statRatio) statRatio.textContent = `${data.ratioEstDocente} est/doc`;
-
-  const actionsList = document.getElementById('resActionsList');
-  if (actionsList) {
-    if (data.alertType === 'alta') {
-      actionsList.innerHTML = `
-        <li><i class="fas fa-arrow-right"></i> Solicitar asignación de docente orientador itinerante ante la Secretaría de Educación.</li>
-        <li><i class="fas fa-arrow-right"></i> Priorizar la sede para implementar el piloto de EduTrack (tamizaje observacional docente).</li>
-        <li><i class="fas fa-arrow-right"></i> Capacitar a los docentes de aula en señales tempranas de TEA y dificultades de lectoescritura.</li>
-      `;
-    } else if (data.alertType === 'media') {
-      actionsList.innerHTML = `
-        <li><i class="fas fa-arrow-right"></i> Articular apoyo psicosocial con colegios nodos o centros de salud cercanos.</li>
-        <li><i class="fas fa-arrow-right"></i> Revisar la formulación de los Planes Individuales de Ajustes Razonables (PIAR) vigentes.</li>
-        <li><i class="fas fa-arrow-right"></i> Brindar herramientas de contención y pedagogía diferencial a los docentes a cargo.</li>
-      `;
-    } else {
-      actionsList.innerHTML = `
-        <li><i class="fas fa-arrow-right"></i> Continuar con el seguimiento periódico en los comités de inclusión y convivencia.</li>
-        <li><i class="fas fa-arrow-right"></i> Mantener actualizadas las novedades de estudiantes en el módulo de discapacidad del SIMAT.</li>
-        <li><i class="fas fa-arrow-right"></i> Fortalecer la articulación entre docentes de aula y orientación escolar.</li>
-      `;
+    await guardarAnalisis(payload, cuerpo);
+  } catch (error) {
+    console.error('Error consultando la API:', error);
+    mostrarError(
+      error.esValidacion
+        ? error.message
+        : `No se pudo obtener la predicción. ${error.message || ''} ` +
+          'Verifica que la API esté disponible y que la URL en config.js sea correcta.'
+    );
+  } finally {
+    if (loading) loading.style.display = 'none';
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML = '<i class="fas fa-brain"></i> Analizar Sede Educativa';
     }
   }
 }
 
-/**
- * 9. Utilidad para Imprimir el Reporte de Diagnóstico
- */
+function mostrarErrorFormulario(mensaje) {
+  const caja = document.getElementById('formError');
+  if (!caja) return;
+  caja.textContent = mensaje;
+  caja.hidden = false;
+  caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function ocultarErrorFormulario() {
+  const caja = document.getElementById('formError');
+  if (caja) {
+    caja.hidden = true;
+    caja.textContent = '';
+  }
+}
+
+function formatearDetalle(detail) {
+  if (!detail) return 'La API rechazó la petición.';
+  if (typeof detail === 'string') return detail;
+  if (!Array.isArray(detail)) return 'La API rechazó la petición.';
+
+  return detail
+    .map((item) => {
+      const campo = Array.isArray(item.loc)
+        ? item.loc.filter((parte) => parte !== 'body').join('.')
+        : '';
+      return `${campo ? campo + ': ' : ''}${item.msg || 'valor inválido'}`;
+    })
+    .join(' · ');
+}
+
+function mostrarError(mensaje) {
+  const placeholder = document.getElementById('resultsPlaceholder');
+  const loading = document.getElementById('resultsLoading');
+  const content = document.getElementById('resultsContent');
+  const errorBox = document.getElementById('resultsError');
+
+  if (placeholder) placeholder.style.display = 'none';
+  if (loading) loading.style.display = 'none';
+  if (content) content.style.display = 'none';
+
+  if (errorBox) {
+    errorBox.style.display = 'block';
+    errorBox.innerHTML = `
+      <i class="fas fa-exclamation-triangle"></i>
+      <div>
+        <strong>No se pudo completar el análisis</strong>
+        <p></p>
+      </div>`;
+    errorBox.querySelector('p').textContent = mensaje;
+  }
+  if (window.innerWidth < 992) {
+    const card = document.getElementById('resultsCard');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Render de resultados (sin transformar la probabilidad)           */
+/* ------------------------------------------------------------------ */
+
+function bandaDe(probabilidad) {
+  if (probabilidad >= 0.7) return 'alta';
+  if (probabilidad >= 0.4) return 'media';
+  return 'baja';
+}
+
+function renderResultados(datos, payload) {
+  if (!datos || typeof datos.probabilidad !== 'number') {
+    mostrarError('La API devolvió una respuesta sin probabilidad.');
+    return;
+  }
+
+  const prob = datos.probabilidad;
+  const clase = Number(datos.clase);
+  const banda = bandaDe(prob);
+  const config = BANDAS[banda];
+  const pct = (prob * 100).toFixed(2);
+  const parametros = datos.parametros_usados || {};
+
+  const set = (id, texto) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = texto;
+  };
+
+  const banner = document.getElementById('resAlertBanner');
+  if (banner) banner.className = `alert-banner ${config.color}`;
+
+  const icono = document.getElementById('resAlertIcon');
+  if (icono) icono.innerHTML = `<i class="fas ${config.icon}"></i>`;
+
+  set('resAlertBadge', config.badge);
+  set('resAlertTitle', config.titulo);
+  set(
+    'resAlertMessage',
+    `El modelo estimó una probabilidad de ${pct} % para la clase 1 ` +
+    `(${datos.etiqueta_clase || 'presencia de casos foco'}). ` +
+    'Es un insumo para priorizar recursos, no un diagnóstico individual.'
+  );
+
+  set('resClassChip', `Clase ${clase} · ${clase === 1 ? 'presencia estimada' : 'sin presencia estimada'}`);
+  set('resProbScore', `${pct} %`);
+  set('resProbRaw', `valor crudo: ${prob}`);
+
+  const barra = document.getElementById('resProbBarFill');
+  if (barra) {
+    barra.className = `prob-bar-fill ${config.fill}`;
+    barra.style.width = '0%';
+    window.setTimeout(() => { barra.style.width = `${pct}%`; }, 50);
+  }
+
+  set('resParamMatricula', String(parametros.matricula ?? payload.matricula));
+  set('resParamZona', parametros.zona === 'rural' ? 'Rural (1)' : 'Urbana (0)');
+  set('resParamDocentes', String(parametros.docentes ?? payload.docentes));
+  set('resParamOrientadores', String(parametros.orientadores ?? payload.orientadores));
+  set('resParamRatio', Number(parametros.est_por_docente ?? 0).toFixed(2));
+  set('resParamNiveles', String(parametros.niveles ?? payload.niveles));
+  set('resParamJornadas', String(parametros.jornadas ?? payload.jornadas));
+  set('resParamDepto', parametros.departamento ?? payload.departamento);
+  set('resParamBilingue', parametros.bilingue ? 'Sí' : 'No');
+  set('resParamEtno', parametros.etnoeducativa ? 'Sí' : 'No');
+  set('resParamClase', `${clase}`);
+
+  set(
+    'resParamColumnNote',
+    `Vector de 41 columnas · dummy: ${parametros.columna_departamento || '—'} · ` +
+    'EST_POR_DOCENTE calculado en el backend.'
+  );
+
+  const lista = document.getElementById('resActionsList');
+  if (lista) {
+    lista.innerHTML = '';
+    config.acciones.forEach((accion) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<i class="fas fa-arrow-right"></i> ';
+      li.appendChild(document.createTextNode(accion));
+      lista.appendChild(li);
+    });
+  }
+
+  const contenido = document.getElementById('resultsContent');
+  if (contenido) contenido.style.display = 'block';
+
+  if (window.innerWidth < 992) {
+    const card = document.getElementById('resultsCard');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. Persistencia en Supabase e historial                             */
+/* ------------------------------------------------------------------ */
+
+async function guardarAnalisis(payload, datos) {
+  const sb = window.supabaseApp;
+  if (!sb) return;
+
+  try {
+    const { data: sesion } = await sb.auth.getSession();
+    const session = sesion && sesion.session;
+    if (!session) return;
+
+    window.eduTrackSession = session;
+
+    const fila = {
+      user_id: session.user.id,
+      user_email: session.user.email,
+      ...payload,
+      est_por_docente: datos.parametros_usados.est_por_docente,
+      clase: datos.clase,
+      probabilidad: datos.probabilidad
+    };
+
+    const { error } = await sb.from(TABLA_ANALISIS).insert(fila);
+    if (error) throw error;
+
+    await cargarHistorial();
+  } catch (error) {
+    console.warn('No se pudo guardar el análisis en Supabase:', error);
+    setHistoryStatus(
+      'El análisis se calculó, pero no se pudo guardar en Supabase. ' +
+      'Verifica la tabla analisis_sede y sus políticas RLS.',
+      true
+    );
+  }
+}
+
+async function initHistorial() {
+  const sb = window.supabaseApp;
+  if (!sb) {
+    setHistoryStatus('Historial no disponible: Supabase no se inicializó.', true);
+    return;
+  }
+
+  try {
+    const { data } = await sb.auth.getSession();
+    if (!data || !data.session) return;
+
+    window.eduTrackSession = data.session;
+    await cargarHistorial();
+  } catch (error) {
+    console.warn('No se pudo inicializar el historial:', error);
+    setHistoryStatus('No se pudo inicializar el historial de Supabase.', true);
+  }
+}
+
+async function cargarHistorial() {
+  const sb = window.supabaseApp;
+  if (!sb) return;
+
+  const tabla = document.getElementById('historyTable');
+  const cuerpo = document.getElementById('historyBody');
+  setHistoryStatus('Cargando historial…');
+
+  try {
+    const { data, error, count } = await sb
+      .from(TABLA_ANALISIS)
+      .select('created_at, matricula, zona, departamento, clase, probabilidad', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    set('kpiAnalisisCount', count === null ? '—' : String(count));
+    set('historyCount', `${count ?? 0} análisis`);
+
+    if (!data || data.length === 0) {
+      if (tabla) tabla.hidden = true;
+      setHistoryStatus('Aún no hay análisis registrados para esta cuenta.');
+      return;
+    }
+
+    if (cuerpo) {
+      cuerpo.innerHTML = '';
+      data.forEach((fila) => {
+        const tr = document.createElement('tr');
+        const celdas = [
+          formatearFecha(fila.created_at),
+          String(fila.matricula),
+          fila.zona === 'rural' ? 'Rural' : 'Urbana',
+          fila.departamento,
+          String(fila.clase),
+          `${(Number(fila.probabilidad) * 100).toFixed(2)} %`
+        ];
+        celdas.forEach((texto) => {
+          const td = document.createElement('td');
+          td.textContent = texto;
+          tr.appendChild(td);
+        });
+        cuerpo.appendChild(tr);
+      });
+    }
+
+    if (tabla) tabla.hidden = false;
+    setHistoryStatus(`Mostrando los últimos ${data.length} de ${count ?? data.length} análisis.`);
+  } catch (error) {
+    console.warn('No se pudo leer el historial:', error);
+    if (tabla) tabla.hidden = true;
+    setHistoryStatus(
+      'No se pudo leer el historial. Ejecuta supabase/migrations/001_analisis_sede.sql ' +
+      'y revisa las políticas RLS.',
+      true
+    );
+  }
+}
+
+function formatearFecha(iso) {
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return '—';
+  return fecha.toLocaleString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function setHistoryStatus(texto, esError) {
+  const estado = document.getElementById('historyStatus');
+  if (!estado) return;
+  estado.textContent = texto;
+  estado.classList.toggle('is-error', Boolean(esError));
+}
+
+function set(id, texto) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = texto;
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Acciones del reporte                                             */
+/* ------------------------------------------------------------------ */
+
 function printReport() {
   window.print();
 }
 
-/**
- * 10. Reiniciar análisis
- */
 function resetAnalysis() {
   const form = document.getElementById('eduTrackForm');
   if (form) form.reset();
 
+  document.getElementById('bilingueText').textContent = 'No';
+  document.getElementById('etnoeducativaText').textContent = 'No';
+
   const placeholder = document.getElementById('resultsPlaceholder');
+  const loading = document.getElementById('resultsLoading');
   const content = document.getElementById('resultsContent');
+  const errorBox = document.getElementById('resultsError');
+
   if (placeholder) placeholder.style.display = 'block';
+  if (loading) loading.style.display = 'none';
   if (content) content.style.display = 'none';
+  if (errorBox) errorBox.style.display = 'none';
 
   window.scrollTo({ top: 300, behavior: 'smooth' });
 }

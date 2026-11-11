@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EduTrack | Detección de Subregistro en Necesidades Educativas Especiales (IA)</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
   <!-- Tipografía Inter y FontAwesome Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,54 +20,64 @@
   <!-- Estilos Personalizados de EduTrack -->
   <link rel="stylesheet" href="style.css">
 
+  <!-- Configuración única (Supabase, API, tabla de persistencia) -->
+  <script src="config.js"></script>
+
   <!-- SDK de Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- ==========================================
-       BLOQUE DE SEGURIDAD Y BLOQUEO DE RUTA 
+       SEGURIDAD DE RUTA BASADA EN SESIÓN SUPABASE
        ========================================== -->
   <script>
-    // 1. Ocultar la página visualmente de inmediato para evitar acceso sin login
-    document.documentElement.style.display = 'none';
+    // Ocultar el contenido mientras se valida la sesión. El watchdog evita
+    // dejar la pantalla en blanco si el CDN de Supabase no responde.
+    document.documentElement.classList.add('auth-pending');
+    window.setTimeout(function () {
+      document.documentElement.classList.remove('auth-pending');
+    }, 8000);
 
-    // 2. Conectar con TU Supabase real (Sintaxis y Key corregidas)
-    const supabaseUrl = 'https://qkttfwezktegpbpyowah.supabase.co';
-    const supabaseKey = 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQOp';
-    const supabaseApp = supabase.createClient(supabaseUrl, supabaseKey);
-
-    // 3. Verificar si hay alguien logueado
-    supabaseApp.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        // Si no hay sesión, expulsar de inmediato a login
-        window.location.replace('login.html');
-      } else {
-        // Si SÍ hay sesión, mostrar la página
-        document.documentElement.style.display = '';
-
-        // Cuando la página termine de cargar, ponemos el nombre del usuario en la barra superior
-        document.addEventListener('DOMContentLoaded', () => {
-          const userEmail = session.user.email;
-          const savedUser = JSON.parse(localStorage.getItem('eduTrackUser'));
-
-          if (savedUser && savedUser.email === userEmail) {
-            document.getElementById('uiUserName').textContent = savedUser.name;
-            document.getElementById('uiUserRole').textContent = savedUser.role;
-            document.getElementById('uiUserInst').title = savedUser.inst;
-            document.getElementById('uiUserInitial').textContent = savedUser.name.charAt(0).toUpperCase();
-          } else {
-            document.getElementById('uiUserName').textContent = userEmail.split('@')[0];
-            document.getElementById('uiUserRole').textContent = 'Analista Autorizado';
-            document.getElementById('uiUserInitial').textContent = userEmail.charAt(0).toUpperCase();
-          }
-        });
+    (function initAuth() {
+      const cfg = window.EDUTRACK_CONFIG || {};
+      if (!window.supabase || !cfg.SUPABASE_URL) {
+        document.documentElement.classList.remove('auth-pending');
+        return;
       }
-    }).catch(() => {
-      window.location.replace('login.html');
-    });
 
-    // Función global para cerrar sesión
+      window.supabaseApp = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+      window.supabaseApp.auth.getSession().then(function (resultado) {
+        const session = resultado && resultado.data ? resultado.data.session : null;
+        if (!session) {
+          window.location.replace('login.html');
+          return;
+        }
+        window.eduTrackSession = session;
+        document.documentElement.classList.remove('auth-pending');
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function () { pintarUsuario(session); });
+        } else {
+          pintarUsuario(session);
+        }
+      }).catch(function () {
+        window.location.replace('login.html');
+      });
+    })();
+
+    function pintarUsuario(session) {
+      const userEmail = session.user.email || '';
+      let savedUser = null;
+      try { savedUser = JSON.parse(localStorage.getItem('eduTrackUser')); } catch (e) { savedUser = null; }
+
+      const nombre = savedUser && savedUser.email === userEmail ? savedUser.name : userEmail.split('@')[0];
+      document.getElementById('uiUserName').textContent = nombre || 'Usuario';
+      document.getElementById('uiUserRole').textContent = 'Analista Autorizado';
+      document.getElementById('uiUserInst').title = (savedUser && savedUser.inst) || 'Sede Educativa Oficial';
+      document.getElementById('uiUserInitial').textContent = (nombre || 'U').charAt(0).toUpperCase();
+    }
+
     async function logout() {
-      await supabaseApp.auth.signOut();
+      try { await window.supabaseApp.auth.signOut(); } catch (e) { /* sesión ya cerrada */ }
       localStorage.removeItem('eduTrackUser');
       window.location.replace('login.html');
     }
@@ -79,7 +90,7 @@
   <div class="top-gov-bar">
     <span><i class="fas fa-landmark"></i> República de Colombia · Ministerio de Educación Nacional · DANE Censo
       2024</span>
-    <span><i class="fas fa-shield-alt"></i> Entorno Cloud · Prototipo Funcional EduTrack v1.2</span>
+    <span><i class="fas fa-shield-alt"></i> Entorno Cloud · Prototipo Funcional EduTrack v2.0</span>
   </div>
 
   <!-- Navbar de Navegación -->
@@ -99,6 +110,7 @@
         <ul class="nav-menu">
           <li><a href="#dashboard" class="nav-link active"><i class="fas fa-chart-pie"></i> Dashboard Nacional</a></li>
           <li><a href="#analizador" class="nav-link"><i class="fas fa-search"></i> Analizador de Sedes</a></li>
+          <li><a href="#historial" class="nav-link"><i class="fas fa-clock-rotate-left"></i> Historial</a></li>
           <li><a href="#metodologia" class="nav-link"><i class="fas fa-book-open"></i> Metodología IA</a></li>
         </ul>
       </nav>
@@ -127,13 +139,12 @@
       <div class="hero-tag">
         <i class="fas fa-microchip"></i> Modelo Supervisado · DANE Educación Formal 2024
       </div>
-      <h2 class="hero-title">Detección Temprana y Prevención del Subregistro NEE</h2>
+      <h2 class="hero-title">Priorización Temprana de Sedes con Posible Presencia de Casos Foco</h2>
       <p class="hero-desc">
         EduTrack analiza los factores estructurales y de dotación docente de las sedes educativas oficiales de Colombia
-        para estimar la probabilidad de subregistro de estudiantes con <strong>Trastornos del Espectro Autista
-          (TEA)</strong>,
-        <strong>trastornos del aprendizaje</strong> y <strong>condiciones psicosociales</strong>, priorizando dónde se
-        requiere apoyo profesional urgente.
+        para estimar, con un modelo de clasificación, la probabilidad de <strong>presencia de casos foco</strong>
+        (TEA, trastornos del aprendizaje y condiciones psicosociales) y priorizar dónde se requiere apoyo profesional
+        urgente. <strong>No emite diagnósticos individuales.</strong>
       </p>
       <div class="hero-badges">
         <div class="hero-badge-item">
@@ -204,6 +215,17 @@
             <div class="kpi-subtext">Mayor divergencia y riesgo de desatención</div>
           </div>
         </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon blue">
+            <i class="fas fa-database"></i>
+          </div>
+          <div class="kpi-content">
+            <h3>Análisis Registrados</h3>
+            <div class="kpi-value" id="kpiAnalisisCount">—</div>
+            <div class="kpi-subtext">Envíos guardados en Supabase para esta cuenta</div>
+          </div>
+        </div>
       </div>
 
       <!-- Gráficos de Demostración -->
@@ -247,8 +269,8 @@
       <div class="section-header">
         <div>
           <h3 class="section-title"><i class="fas fa-search-plus"></i> Analizador Predictivo de Sedes Educativas</h3>
-          <p class="section-subtitle">Simule la inferencia del modelo de Machine Learning ingresando las variables de
-            una sede educativa.</p>
+          <p class="section-subtitle">Ejecute la inferencia real del modelo ingresando las variables de una sede
+            educativa.</p>
         </div>
       </div>
 
@@ -264,26 +286,25 @@
           <!-- Presets de Prueba Rápida para Sustentación -->
           <div class="presets-container">
             <div class="presets-label">
-              <i class="fas fa-vial"></i> Casos de Demostración Rápida (1 Clic)
+              <i class="fas fa-vial"></i> Casos de Demostración (se ejecutan contra la API real)
             </div>
             <div class="presets-grid">
-              <button type="button" class="btn-preset danger" onclick="loadPreset('alta')"
-                title="Sede rural sin orientador y con 0 casos">
-                <i class="fas fa-exclamation-circle"></i> Caso 1: Prioridad Alta (Subregistro)
+              <button type="button" class="btn-preset success" onclick="loadPreset('rural_pequena')"
+                title="60 estudiantes, 3 docentes, 0 orientadores, Amazonas">
+                <i class="fas fa-seedling"></i> Rural pequeña
               </button>
-              <button type="button" class="btn-preset warning" onclick="loadPreset('media')"
-                title="Sede con casos pero sin orientador">
-                <i class="fas fa-exclamation-triangle"></i> Caso 2: Prioridad Media (Sin Apoyo)
+              <button type="button" class="btn-preset warning" onclick="loadPreset('rural_intermedia')"
+                title="300 estudiantes, 20 docentes, 1 orientador, Chocó">
+                <i class="fas fa-house-chimney"></i> Rural intermedia
               </button>
-              <button type="button" class="btn-preset success" onclick="loadPreset('baja')"
-                title="Sede con orientación y reporte coherente">
-                <i class="fas fa-check-circle"></i> Caso 3: Sin Alerta (Monitoreo)
+              <button type="button" class="btn-preset danger" onclick="loadPreset('urbana_grande')"
+                title="950 estudiantes, 34 docentes, 2 orientadores, Antioquia">
+                <i class="fas fa-city"></i> Urbana grande
               </button>
             </div>
           </div>
 
-    <!-- Formulario de Entrada de Datos -->
-          <form id="eduTrackForm" autocomplete="off">
+          <form id="eduTrackForm" autocomplete="off" novalidate>
             <div class="form-grid">
 
               <!-- 1. Matrícula total -->
@@ -291,137 +312,156 @@
                 <label class="form-label" for="matricula">
                   <span>Matrícula Total</span>
                   <i class="fas fa-question-circle tooltip-icon"
-                    title="Cantidad total de estudiantes matriculados en la sede"></i>
+                    title="MATRICULA: estudiantes matriculados en la sede"></i>
                 </label>
-                <input type="number" id="matricula" name="matricula" class="form-input" min="1" max="10000" value="210"
-                  required>
-                <span class="input-hint">Total alumnos registrados</span>
+                <input type="number" id="matricula" name="matricula" class="form-input" min="0" max="100000" step="1"
+                  value="210" required>
+                <span class="input-hint">Variable dominante del modelo</span>
               </div>
 
-              <!-- 2. Cantidad de docentes de aula -->
+              <!-- 2. Docentes de aula -->
               <div class="form-group">
                 <label class="form-label" for="docentes">
                   <span>Docentes de Aula</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Docentes frente a grupo escolar"></i>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="N_DOCENTES: divisor de EST_POR_DOCENTE (no puede ser 0)"></i>
                 </label>
-                <input type="number" id="docentes" name="docentes" class="form-input" min="0" max="500" value="8"
-                  required>
+                <input type="number" id="docentes" name="docentes" class="form-input" min="1" max="5000" step="1"
+                  value="8" required>
                 <span class="input-hint">Personal docente regular</span>
               </div>
 
-              <!-- 3. Cantidad de docentes orientadores -->
+              <!-- 3. Docentes orientadores -->
               <div class="form-group">
                 <label class="form-label" for="orientadores">
                   <span>Docentes Orientadores</span>
                   <i class="fas fa-question-circle tooltip-icon"
-                    title="Profesionales en psicología / psicopedagogía"></i>
+                    title="N_ORIENTADORES: psicología / psicopedagogía"></i>
                 </label>
-                <input type="number" id="orientadores" name="orientadores" class="form-input" min="0" max="50" value="0"
-                  required>
+                <input type="number" id="orientadores" name="orientadores" class="form-input" min="0" max="500"
+                  step="1" value="0" required>
                 <span class="input-hint">Orientación escolar asignada</span>
               </div>
 
-              <!-- 4. Número de niveles educativos -->
+              <!-- 4. Niveles educativos -->
               <div class="form-group">
                 <label class="form-label" for="niveles">
                   <span>Niveles Educativos</span>
                   <i class="fas fa-question-circle tooltip-icon"
-                    title="Preescolar, Básica Primaria, Secundaria, Media"></i>
+                    title="N_NIVELES: preescolar, básica primaria, secundaria, media"></i>
                 </label>
-                <input type="number" id="niveles" name="niveles" class="form-input" min="1" max="6" value="2" required>
-                <span class="input-hint">Cant. de niveles ofrecidos (1 a 5)</span>
+                <input type="number" id="niveles" name="niveles" class="form-input" min="1" max="6" step="1" value="2"
+                  required>
+                <span class="input-hint">Cantidad de niveles ofrecidos (1 a 6)</span>
               </div>
 
-              <!-- 5. Número de jornadas operativas -->
+              <!-- 5. Jornadas -->
               <div class="form-group">
                 <label class="form-label" for="jornadas">
                   <span>Jornadas Operativas</span>
                   <i class="fas fa-question-circle tooltip-icon"
-                    title="Mañana, Tarde, Única, Nocturna, Fin de semana"></i>
+                    title="N_JORNADAS: mañana, tarde, única, nocturna, fin de semana"></i>
                 </label>
-                <input type="number" id="jornadas" name="jornadas" class="form-input" min="1" max="5" value="1"
-                  required>
-                <span class="input-hint">Jornadas en funcionamiento</span>
+                <input type="number" id="jornadas" name="jornadas" class="form-input" min="1" max="5" step="1"
+                  value="1" required>
+                <span class="input-hint">Importancia 0 en el árbol, columna obligatoria</span>
               </div>
 
               <!-- 6. Zona -->
               <div class="form-group">
                 <label class="form-label" for="zona">
                   <span>Zona de Ubicación</span>
-                  <i class="fas fa-question-circle tooltip-icon" title="Urbana o Rural"></i>
+                  <i class="fas fa-question-circle tooltip-icon" title="ZONA_RURAL (1 = rural, 0 = urbana)"></i>
                 </label>
                 <select id="zona" name="zona" class="form-select" required>
-                  <option value="Rural" selected>Rural</option>
-                  <option value="Urbana">Urbana</option>
+                  <option value="rural" selected>Rural</option>
+                  <option value="urbana">Urbana</option>
                 </select>
-                <span class="input-hint">Área geográfica de la sede</span>
+                <span class="input-hint">Segunda variable más importante (10,8 %)</span>
               </div>
 
-              <!-- 7. Departamento (NUEVO) -->
+              <!-- 7. Departamento -->
               <div class="form-group">
                 <label class="form-label" for="departamento">
                   <span>Departamento</span>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="Genera una dummy DEP_*. Amazonas es la categoría base."></i>
                 </label>
-                <input type="text" id="departamento" name="departamento" class="form-input" placeholder="Ej. Antioquia" required>
-                <span class="input-hint">Ubicación regional</span>
+                <select id="departamento" name="departamento" class="form-select" required>
+                  <option value="Amazonas" selected>Amazonas (categoría base)</option>
+                  <option value="Antioquia">Antioquia</option>
+                  <option value="Arauca">Arauca</option>
+                  <option value="Archipiélago de San Andrés, Providencia y Santa Catalina">Archipiélago de San Andrés, Providencia y Santa Catalina</option>
+                  <option value="Atlántico">Atlántico</option>
+                  <option value="Bogotá, D.C.">Bogotá, D.C.</option>
+                  <option value="Bolívar">Bolívar</option>
+                  <option value="Boyacá">Boyacá</option>
+                  <option value="Caldas">Caldas</option>
+                  <option value="Caquetá">Caquetá</option>
+                  <option value="Casanare">Casanare</option>
+                  <option value="Cauca">Cauca</option>
+                  <option value="Cesar">Cesar</option>
+                  <option value="Chocó">Chocó</option>
+                  <option value="Córdoba">Córdoba</option>
+                  <option value="Cundinamarca">Cundinamarca</option>
+                  <option value="Guainía">Guainía</option>
+                  <option value="Guaviare">Guaviare</option>
+                  <option value="Huila">Huila</option>
+                  <option value="La Guajira">La Guajira</option>
+                  <option value="Magdalena">Magdalena</option>
+                  <option value="Meta">Meta</option>
+                  <option value="Nariño">Nariño</option>
+                  <option value="Norte de Santander">Norte de Santander</option>
+                  <option value="Putumayo">Putumayo</option>
+                  <option value="Quindío">Quindío</option>
+                  <option value="Risaralda">Risaralda</option>
+                  <option value="Santander">Santander</option>
+                  <option value="Sucre">Sucre</option>
+                  <option value="Tolima">Tolima</option>
+                  <option value="Valle del Cauca">Valle del Cauca</option>
+                  <option value="Vaupés">Vaupés</option>
+                  <option value="Vichada">Vichada</option>
+                </select>
+                <span class="input-hint">Solo departamento (el modelo no usa municipio)</span>
               </div>
 
-              <!-- 8. Municipio (NUEVO) -->
+              <!-- 8. Sede bilingüe -->
               <div class="form-group">
-                <label class="form-label" for="municipio">
-                  <span>Municipio</span>
-                </label>
-                <input type="text" id="municipio" name="municipio" class="form-input" placeholder="Ej. Medellín" required>
-                <span class="input-hint">Entidad territorial local</span>
-              </div>
-
-              <!-- 9. Sede Bilingüe -->
-              <div class="form-group">
-                <label class="form-label" for="bilingue">
+                <div class="form-label">
                   <span>Sede Bilingüe</span>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="BILINGUE_SI: importancia 0 en el árbol, pero la columna es obligatoria"></i>
+                </div>
+                <label class="switch-row">
+                  <span class="switch">
+                    <input type="checkbox" id="bilingue" name="bilingue">
+                    <span class="switch-slider"></span>
+                  </span>
+                  <span class="switch-text" id="bilingueText">No</span>
                 </label>
-                <select id="bilingue" name="bilingue" class="form-select" required>
-                  <option value="No" selected>No</option>
-                  <option value="Sí">Sí</option>
-                </select>
-                <span class="input-hint">Programa bilingüe oficial</span>
+                <span class="input-hint">Activa BILINGUE_SI = 1</span>
               </div>
 
-              <!-- 10. Sede Etnoeducativa -->
+              <!-- 9. Sede etnoeducativa -->
               <div class="form-group">
-                <label class="form-label" for="etnoeducativa">
+                <div class="form-label">
                   <span>Sede Etnoeducativa</span>
+                  <i class="fas fa-question-circle tooltip-icon"
+                    title="ETNOEDUC_SI: peso 1,07 % en el árbol"></i>
+                </div>
+                <label class="switch-row">
+                  <span class="switch">
+                    <input type="checkbox" id="etnoeducativa" name="etnoeducativa">
+                    <span class="switch-slider"></span>
+                  </span>
+                  <span class="switch-text" id="etnoeducativaText">No</span>
                 </label>
-                <select id="etnoeducativa" name="etnoeducativa" class="form-select" required>
-                  <option value="No" selected>No</option>
-                  <option value="Sí">Sí</option>
-                </select>
                 <span class="input-hint">Enfoque étnico / afro / indígena</span>
               </div>
 
-              <!-- 11. Casos Foco Reportados (N_FOCO) -->
-              <div class="form-group">
-                <label class="form-label" for="casos_foco">
-                  <span>Casos Foco (TEA, Apren, Psico)</span>
-                  <i class="fas fa-question-circle tooltip-icon"
-                    title="Estudiantes registrados con condiciones foco en SIMAT"></i>
-                </label>
-                <input type="number" id="casos_foco" name="casos_foco" class="form-input" min="0" max="500" value="0" required>
-                <span class="input-hint">Ingrese 0 si no hay diagnósticos</span>
-              </div>
-
-              <!-- 12. Total Condiciones (N_COND_TOTAL - NUEVO) -->
-              <div class="form-group">
-                <label class="form-label" for="casos_total">
-                  <span>Total Cualquier Condición</span>
-                  <i class="fas fa-question-circle tooltip-icon"
-                    title="Total de estudiantes con cualquier tipo de discapacidad o trastorno reportado"></i>
-                </label>
-                <input type="number" id="casos_total" name="casos_total" class="form-input" min="0" max="500" value="0" required>
-                <span class="input-hint">Físicas, cognitivas, múltiples, etc.</span>
-              </div>
-
             </div>
+
+            <div class="form-error" id="formError" hidden></div>
 
             <!-- Botón de Acción Principal -->
             <button type="submit" class="btn-submit-analysis" id="btnSubmitAnalysis">
@@ -437,88 +477,115 @@
           <div class="results-placeholder" id="resultsPlaceholder">
             <i class="fas fa-laptop-code"></i>
             <h4>Esperando Parámetros de Sede</h4>
-            <p>Haga clic en <strong>"Analizar Sede Educativa"</strong> o elija un caso de demostración rápida para
-              ejecutar la simulación de la IA.</p>
+            <p>Haga clic en <strong>"Analizar Sede Educativa"</strong> o elija un caso de demostración para ejecutar
+              la inferencia contra la API real.</p>
           </div>
 
           <!-- Estado de Carga (Spinner animado) -->
           <div class="loading-box" id="resultsLoading" style="display:none;">
             <div class="spinner"></div>
             <div class="loading-text">Ejecutando Modelo Supervisado...</div>
-            <div class="loading-subtext">Evaluando probabilidades estadísticas con base en censo DANE 2024</div>
+            <div class="loading-subtext">Construyendo el vector de 41 columnas y consultando la API</div>
           </div>
+
+          <!-- Estado de Error -->
+          <div class="results-error" id="resultsError" style="display:none;"></div>
 
           <!-- Contenedor de Resultados Generados -->
           <div class="results-content" id="resultsContent" style="display:none;">
 
             <div class="results-header-tag">
               <div class="ai-stamp">
-                <i class="fas fa-robot"></i> EduTrack IA Model Engine
+                <i class="fas fa-robot"></i> DecisionTreeClassifier · 41 features
               </div>
-              <span class="text-xs text-slate-500 font-semibold" style="font-size:0.75rem; color:var(--slate-500);">
-                Árbol de Decisión / Regresión
-              </span>
+              <span class="class-chip" id="resClassChip">Clase —</span>
             </div>
 
-            <!-- Banner de Alerta Dinámica (Alta / Media / Baja) -->
+            <!-- Banner de priorización (derivado de la probabilidad, no del modelo) -->
             <div class="alert-banner" id="resAlertBanner">
               <div class="alert-icon-wrapper" id="resAlertIcon">
-                <i class="fas fa-exclamation-triangle"></i>
+                <i class="fas fa-circle-info"></i>
               </div>
               <div class="alert-body">
-                <span class="alert-badge" id="resAlertBadge">PRIORIDAD ALTA</span>
-                <h4 id="resAlertTitle">Alerta de Posible Subregistro y Falta de Apoyo</h4>
-                <p id="resAlertMessage">Descripción generada automáticamente según la lógica de inferencia.</p>
+                <span class="alert-badge" id="resAlertBadge">PRIORIDAD</span>
+                <h4 id="resAlertTitle">Resultado del modelo</h4>
+                <p id="resAlertMessage">—</p>
               </div>
             </div>
 
-            <!-- Indicador de Probabilidad y Riesgo de Subregistro -->
+            <!-- Probabilidad cruda devuelta por la API -->
             <div class="prob-card">
               <div class="prob-info">
-                <h5>Riesgo de Subregistro Estimado</h5>
-                <div class="prob-score" id="resProbScore">78%</div>
-                <span id="resProbSubtext" style="font-size:0.75rem; color:var(--slate-500); font-weight:500;">Riesgo de
-                  condiciones foco no registradas</span>
+                <h5>Probabilidad clase 1 · presencia de casos foco</h5>
+                <div class="prob-score" id="resProbScore">—</div>
+                <span class="prob-raw" id="resProbRaw">valor crudo: —</span>
               </div>
               <div class="prob-bar-wrapper">
                 <div class="prob-bar-track">
-                  <div class="prob-bar-fill red" id="resProbBarFill" style="width: 78%;"></div>
+                  <div class="prob-bar-fill" id="resProbBarFill"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Estadísticas Comparativas del Diagnóstico -->
-            <div class="diag-stats-grid">
-              <div class="diag-stat-item">
-                <div class="diag-stat-label">Casos Reportados vs. Esperados</div>
-                <div class="diag-stat-val" id="resStatCasos">0 / ~3</div>
-                <div class="diag-stat-sub">Regresión simple (~1.25% matrícula)</div>
+            <!-- Parámetros exactos con los que se construyó el vector de 41 columnas -->
+            <div class="params-box">
+              <h5><i class="fas fa-sliders-h"></i> Parámetros usados por el modelo</h5>
+              <div class="params-grid">
+                <div class="param-item highlight">
+                  <span class="param-label">Matrícula</span>
+                  <span class="param-value" id="resParamMatricula">—</span>
+                </div>
+                <div class="param-item highlight">
+                  <span class="param-label">Zona</span>
+                  <span class="param-value" id="resParamZona">—</span>
+                </div>
+                <div class="param-item highlight">
+                  <span class="param-label">Docentes</span>
+                  <span class="param-value" id="resParamDocentes">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Orientadores</span>
+                  <span class="param-value" id="resParamOrientadores">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Estudiantes / docente</span>
+                  <span class="param-value" id="resParamRatio">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Niveles</span>
+                  <span class="param-value" id="resParamNiveles">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Jornadas</span>
+                  <span class="param-value" id="resParamJornadas">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Departamento</span>
+                  <span class="param-value" id="resParamDepto">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Bilingüe</span>
+                  <span class="param-value" id="resParamBilingue">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Etnoeducativa</span>
+                  <span class="param-value" id="resParamEtno">—</span>
+                </div>
+                <div class="param-item">
+                  <span class="param-label">Clase predicha</span>
+                  <span class="param-value" id="resParamClase">—</span>
+                </div>
               </div>
-
-              <div class="diag-stat-item">
-                <div class="diag-stat-label">Probabilidad de Presencia (IA)</div>
-                <div class="diag-stat-val" id="resStatProbPresencia">78%</div>
-                <div class="diag-stat-sub">Modelo supervisado DANE 2024</div>
-              </div>
-
-              <div class="diag-stat-item">
-                <div class="diag-stat-label">Ratio Alumnos / Docente</div>
-                <div class="diag-stat-val" id="resStatRatio">26.3 est/doc</div>
-                <div class="diag-stat-sub">Nivel de sobrecarga en aula</div>
-              </div>
+              <p class="params-note" id="resParamColumnNote"></p>
             </div>
 
-            <!-- Acciones Recomendadas para el Directivo/Docente -->
+            <!-- Acciones sugeridas según la banda de probabilidad -->
             <div class="actions-box">
-              <h5><i class="fas fa-tasks"></i> Recomendaciones Pedagógicas EduTrack</h5>
-              <ul class="actions-list" id="resActionsList">
-                <li><i class="fas fa-arrow-right"></i> Solicitar docente orientador itinerante ante la Secretaría de
-                  Educación.</li>
-                <li><i class="fas fa-arrow-right"></i> Priorizar la sede para implementar el piloto de EduTrack
-                  (tamizaje docente en aula).</li>
-                <li><i class="fas fa-arrow-right"></i> Capacitar a los docentes de aula en señales tempranas de TEA y
-                  dificultades de lectoescritura.</li>
-              </ul>
+              <h5><i class="fas fa-tasks"></i> Recomendaciones institucionales</h5>
+              <ul class="actions-list" id="resActionsList"></ul>
+              <p class="actions-note">
+                Sugerencias de gestión escolar. No son la salida del modelo ni constituyen un diagnóstico.
+              </p>
             </div>
 
             <!-- Botones de Acción de Resultados -->
@@ -538,7 +605,38 @@
       </div>
     </section>
 
-    <!-- 3. METODOLOGÍA DEL PROYECTO Y MARCO LEGAL -->
+    <!-- 3. HISTORIAL DE ANÁLISIS (SUPABASE) -->
+    <section id="historial" class="history-section">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title"><i class="fas fa-clock-rotate-left"></i> Historial de Análisis</h3>
+          <p class="section-subtitle">Cada envío se guarda en Supabase y queda visible solo para la cuenta
+            autenticada (Row Level Security).</p>
+        </div>
+        <span class="history-count" id="historyCount">—</span>
+      </div>
+
+      <div class="history-card">
+        <div class="history-status" id="historyStatus">Cargando historial…</div>
+        <div class="history-table-wrapper">
+          <table class="history-table" id="historyTable" hidden>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Matrícula</th>
+                <th>Zona</th>
+                <th>Departamento</th>
+                <th>Clase</th>
+                <th>Probabilidad</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. METODOLOGÍA DEL PROYECTO Y MARCO LEGAL -->
     <section id="metodologia" class="methodology-section">
       <div class="section-header">
         <div>
@@ -560,11 +658,13 @@
         </div>
 
         <div class="method-item">
-          <h4><i class="fas fa-network-wired"></i> Modelos Evaluados</h4>
+          <h4><i class="fas fa-network-wired"></i> Modelo Servido</h4>
           <p>
-            Se implementaron modelos de clasificación supervisada (Árbol de Decisión, Regresión Logística,
-            Red Neuronal MLP y KNN) con AUC de 0.89, junto con modelos de regresión lineal para estimar la tasa esperada
-            de casos foco.
+            <strong>DecisionTreeClassifier</strong> entrenado con 41 variables (9 parámetros base + 32 dummies de
+            departamento), <code>max_depth=6</code> y <code>min_samples_leaf=30</code>. El backend calcula
+            <code>EST_POR_DOCENTE</code>, activa la dummy del departamento y envía el vector en el orden exacto de
+            <code>columnas_edutrack.pkl</code>. El <code>StandardScaler</code> del entrenamiento no se aplica en
+            inferencia porque los umbrales del árbol están en unidades reales.
           </p>
         </div>
 
