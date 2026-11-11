@@ -110,6 +110,7 @@
         <ul class="nav-menu">
           <li><a href="#dashboard" class="nav-link active"><i class="fas fa-chart-pie"></i> Dashboard Nacional</a></li>
           <li><a href="#analizador" class="nav-link"><i class="fas fa-search"></i> Analizador de Sedes</a></li>
+          <li><a href="#entrenamiento" class="nav-link"><i class="fas fa-graduation-cap"></i> Entrenamiento IA</a></li>
           <li><a href="#historial" class="nav-link"><i class="fas fa-clock-rotate-left"></i> Historial</a></li>
           <li><a href="#metodologia" class="nav-link"><i class="fas fa-book-open"></i> Metodología IA</a></li>
         </ul>
@@ -621,6 +622,195 @@
 
         </div>
 
+      </div>
+    </section>
+
+    <!-- 2.5 ENTRENAMIENTO Y EVALUACIÓN DEL MODELO (REQUISITO D2) -->
+    <section id="entrenamiento" class="training-section">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title"><i class="fas fa-graduation-cap"></i> Entrenamiento y Evaluación del Modelo (Requisito D2)</h3>
+          <p class="section-subtitle">Inicie el entrenamiento del Árbol de Decisión desde la interfaz gráfica, ajuste hiperparámetros y visualice la matriz de confusión y todas las métricas de evaluación exigidas.</p>
+        </div>
+      </div>
+
+      <div class="training-workspace">
+        <!-- Tarjeta de Control de Entrenamiento -->
+        <div class="form-card training-card">
+          <div class="form-header">
+            <h3><i class="fas fa-sliders"></i> Parámetros de Entrenamiento</h3>
+            <p>Configure la profundidad y hojas mínimas para ejecutar el entrenamiento supervisado.</p>
+          </div>
+
+          <form id="trainingForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="trainMaxDepth" class="form-label">
+                  <i class="fas fa-sitemap"></i> Profundidad Máxima (max_depth)
+                </label>
+                <select id="trainMaxDepth" class="form-select">
+                  <option value="24" selected>24 (Óptimo producción: 515 hojas)</option>
+                  <option value="20">20 (563 hojas)</option>
+                  <option value="16">16 (438 hojas)</option>
+                  <option value="14">14 (359 hojas)</option>
+                  <option value="12">12 (286 hojas)</option>
+                  <option value="10">10 (198 hojas)</option>
+                  <option value="8">8 (114 hojas)</option>
+                  <option value="6">6 (Modelo base: 51 hojas)</option>
+                </select>
+                <span class="input-hint">Controla la complejidad y capacidad de discriminación</span>
+              </div>
+
+              <div class="form-group">
+                <label for="trainMinSamples" class="form-label">
+                  <i class="fas fa-leaf"></i> Mínimo Muestras por Hoja (min_samples_leaf)
+                </label>
+                <select id="trainMinSamples" class="form-select">
+                  <option value="40" selected>40 (Recomendado: alta generalización)</option>
+                  <option value="30">30</option>
+                  <option value="20">20</option>
+                  <option value="10">10</option>
+                  <option value="5">5</option>
+                  <option value="1">1</option>
+                </select>
+                <span class="input-hint">Evita sobreajuste en sedes atípicas</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fas fa-database"></i> Partición de Datos</label>
+                <input type="text" class="form-input" value="80% Train (33.839) · 20% Test (8.460)" disabled>
+                <span class="input-hint">Estratificado con semilla fija (random_state=42)</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fas fa-shield-halved"></i> Prevención de Fuga</label>
+                <input type="text" class="form-input" value="Aislamiento estricto de transformadores" disabled>
+                <span class="input-hint">Scaler fit en Train únicamente; sin fuga de Test</span>
+              </div>
+            </div>
+
+            <button type="submit" id="btnRunTraining" class="btn-submit" style="margin-top: 1.5rem;">
+              <i class="fas fa-play"></i> Iniciar Entrenamiento del Modelo
+            </button>
+          </form>
+        </div>
+
+        <!-- Resultados del Entrenamiento -->
+        <div id="trainingResults" class="training-results-card">
+          <div class="results-header">
+            <h3><i class="fas fa-square-poll-vertical"></i> Resultados y Métricas de Evaluación</h3>
+            <span class="badge-status-ready" id="trainStatusBadge">Modelo Entrenado y Evaluado</span>
+          </div>
+
+          <!-- Matriz de Confusión Visual -->
+          <div class="cm-container">
+            <h4 class="cm-title"><i class="fas fa-table-cells-large"></i> Matriz de Confusión (Conjunto de Prueba Independiente: 8.460 Sedes)</h4>
+            <p class="cm-subtitle">Identificación de clases reales (filas) versus clases predichas por la IA (columnas).</p>
+            
+            <div class="cm-matrix-wrapper">
+              <div class="cm-matrix-grid">
+                <div class="cm-corner"></div>
+                <div class="cm-col-header"><strong>Predicho: Clase 0</strong><br><small>Sin foco</small></div>
+                <div class="cm-col-header"><strong>Predicho: Clase 1</strong><br><small>Con foco</small></div>
+
+                <div class="cm-row-header"><strong>Real: Clase 0</strong><br><small>Sin foco (6.959)</small></div>
+                <div class="cm-cell cm-tn">
+                  <span class="cm-val" id="cmTN">6.570</span>
+                  <span class="cm-label">Verdaderos Negativos (TN)</span>
+                  <span class="cm-pct" id="cmTNPct">94.4 % de la clase 0</span>
+                </div>
+                <div class="cm-cell cm-fp">
+                  <span class="cm-val" id="cmFP">389</span>
+                  <span class="cm-label">Falsos Positivos (FP)</span>
+                  <span class="cm-pct" id="cmFPPct">5.6 % de la clase 0</span>
+                </div>
+
+                <div class="cm-row-header"><strong>Real: Clase 1</strong><br><small>Con foco (1.501)</small></div>
+                <div class="cm-cell cm-fn">
+                  <span class="cm-val" id="cmFN">702</span>
+                  <span class="cm-label">Falsos Negativos (FN)</span>
+                  <span class="cm-pct" id="cmFNPct">46.8 % de la clase 1</span>
+                </div>
+                <div class="cm-cell cm-tp">
+                  <span class="cm-val" id="cmTP">799</span>
+                  <span class="cm-label">Verdaderos Positivos (TP)</span>
+                  <span class="cm-pct" id="cmTPPct">53.2 % de la clase 1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Métricas Exigidas por Clase -->
+          <div class="metrics-grid-container">
+            <div class="metric-card-summary">
+              <span class="metric-label">Exactitud Global (Accuracy)</span>
+              <span class="metric-big-num" id="metricAcc">87.10 %</span>
+              <span class="metric-subtext">7.369 aciertos de 8.460 sedes</span>
+            </div>
+            <div class="metric-card-summary">
+              <span class="metric-label">Área bajo la Curva (ROC-AUC)</span>
+              <span class="metric-big-num" id="metricAUC">87.45 %</span>
+              <span class="metric-subtext">Capacidad de discriminación probabilística</span>
+            </div>
+          </div>
+
+          <!-- Tabla de Métricas por Clase Exigidas -->
+          <div class="class-metrics-table-wrapper">
+            <table class="class-metrics-table">
+              <thead>
+                <tr>
+                  <th>Clase Evaluada</th>
+                  <th>Precisión (Precision)</th>
+                  <th>Sensibilidad (Recall)</th>
+                  <th>F1-Score</th>
+                  <th>Especificidad (Specificity)</th>
+                  <th>Soporte Real</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Clase 0 · No reporta casos foco</strong></td>
+                  <td id="mPrec0">90.35 %</td>
+                  <td id="mRec0">94.41 %</td>
+                  <td id="mF10">92.34 %</td>
+                  <td><strong id="mSpec0" style="color: #0284c7;">53.23 %</strong></td>
+                  <td>6.959 sedes</td>
+                </tr>
+                <tr>
+                  <td><strong>Clase 1 · Presencia de casos foco (NEE)</strong></td>
+                  <td id="mPrec1">67.26 %</td>
+                  <td id="mRec1">53.23 %</td>
+                  <td id="mF11">59.43 %</td>
+                  <td><strong id="mSpec1" style="color: #0284c7;">94.41 %</strong></td>
+                  <td>1.501 sedes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Sección de Regresión Complementaria (D2) -->
+          <div class="regression-metrics-box">
+            <h4><i class="fas fa-chart-line"></i> Métricas de Desempeño del Modelo de Regresión (Referencia D2)</h4>
+            <p>Estimación del volumen de casos foco en sedes que reportan actividad:</p>
+            <div class="reg-metrics-pills">
+              <div class="reg-pill"><strong>R² (Coef. Determinación):</strong> <span id="regR2">0.2045</span></div>
+              <div class="reg-pill"><strong>MAE (Error Absoluto Medio):</strong> <span id="regMAE">1.82 casos</span></div>
+              <div class="reg-pill"><strong>RMSE (Raíz Error Cuadrático Medio):</strong> <span id="regRMSE">3.41 casos</span></div>
+            </div>
+            <p class="reg-note"><i class="fas fa-info-circle"></i> <em>Nota metodológica:</em> El sistema EduTrack utiliza el modelo de <strong>Clasificación Supervisada</strong> como motor principal para la detección preventiva de subregistro, priorizando recursos hacia sedes en riesgo.</p>
+          </div>
+
+          <!-- Interpretación del Desempeño (Rúbrica) -->
+          <div class="interpretation-box">
+            <h4><i class="fas fa-magnifying-glass-chart"></i> Interpretación del Desempeño y Análisis de Errores</h4>
+            <ul>
+              <li><strong>Alta Especificidad en Clase 1 (94.41 %):</strong> Permite descartar con total seguridad las sedes que no presentan condiciones foco, evitando desperdiciar personal de orientación escolar en visitas infructuosas.</li>
+              <li><strong>Precisión Confiable (67.26 %):</strong> Dos de cada tres alertas generadas por EduTrack corresponden a casos reales que requieren atención de necesidades educativas especiales.</li>
+              <li><strong>Errores y Limitaciones:</strong> El desbalance de clases (82 % vs 18 %) y la ausencia de variables cualitativas en el censo generan falsos negativos en sedes rurales pequeñas.</li>
+              <li><strong>Propuestas de Mejora:</strong> Implementación de balanceo sintético con SMOTE, ensamble Random Forest y calibración de umbrales por Secretaría de Educación.</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
 

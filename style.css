@@ -1637,10 +1637,304 @@ html.auth-pending body {
 /* ==========================================================================
    Modo Impresión (Para exportar diagnóstico en PDF)
    ========================================================================== */
+/* ==========================================================================
+   ESTILOS PARA ENTRENAMIENTO Y EVALUACIÓN (REQUISITO D2)
+   ========================================================================== */
+.training-section {
+  margin-top: 40px;
+}
+
+.training-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .training-workspace {
+    grid-template-columns: 380px 1fr;
+  }
+}
+
+.training-results-card {
+  background-color: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--slate-200);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+}
+
+.badge-status-ready {
+  background-color: #dcfce7;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #bbf7d0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-status-loading {
+  background-color: #fef3c7;
+  color: #b45309;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #fde68a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Matriz de confusión */
+.cm-container {
+  margin-top: 18px;
+  background-color: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.cm-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--slate-800);
+  margin-bottom: 4px;
+}
+
+.cm-subtitle {
+  font-size: 0.8rem;
+  color: var(--slate-500);
+  margin-bottom: 14px;
+}
+
+.cm-matrix-wrapper {
+  overflow-x: auto;
+}
+
+.cm-matrix-grid {
+  display: grid;
+  grid-template-columns: 140px repeat(2, 1fr);
+  gap: 8px;
+  min-width: 440px;
+}
+
+.cm-col-header, .cm-row-header {
+  font-size: 0.78rem;
+  color: var(--slate-600);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 6px;
+}
+
+.cm-row-header {
+  align-items: flex-end;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.cm-cell {
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.15s ease;
+}
+
+.cm-cell:hover {
+  transform: scale(1.02);
+}
+
+.cm-cell .cm-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.cm-cell .cm-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.cm-cell .cm-pct {
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.cm-tn {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.cm-fp {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.cm-fn {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #ffedd5;
+}
+
+.cm-tp {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* Métricas globales */
+.metrics-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.metric-card-summary {
+  background-color: var(--white);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-card-summary .metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate-500);
+}
+
+.metric-card-summary .metric-big-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--primary-700);
+}
+
+.metric-card-summary .metric-subtext {
+  font-size: 0.72rem;
+  color: var(--slate-400);
+}
+
+/* Tabla de métricas por clase */
+.class-metrics-table-wrapper {
+  margin-top: 18px;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+}
+
+.class-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.class-metrics-table th {
+  background-color: var(--slate-100);
+  color: var(--slate-700);
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.class-metrics-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--slate-100);
+  color: var(--slate-800);
+}
+
+/* Regresión */
+.regression-metrics-box {
+  margin-top: 18px;
+  background-color: #f8fafc;
+  border: 1px dashed var(--slate-300);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.regression-metrics-box h4 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--slate-700);
+  margin-bottom: 6px;
+}
+
+.regression-metrics-box p {
+  font-size: 0.78rem;
+  color: var(--slate-600);
+  margin-bottom: 10px;
+}
+
+.reg-metrics-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reg-pill {
+  background-color: var(--white);
+  border: 1px solid var(--slate-200);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+}
+
+.reg-note {
+  font-size: 0.72rem !important;
+  color: var(--slate-500) !important;
+  margin-top: 10px !important;
+  margin-bottom: 0 !important;
+}
+
+/* Interpretación */
+.interpretation-box {
+  margin-top: 18px;
+  background-color: #eff6ff;
+  border-left: 4px solid var(--primary-600);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+}
+
+.interpretation-box h4 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--primary-800);
+  margin-bottom: 8px;
+}
+
+.interpretation-box ul {
+  padding-left: 18px;
+  font-size: 0.78rem;
+  color: var(--slate-700);
+  line-height: 1.5;
+}
+
+.interpretation-box li {
+  margin-bottom: 6px;
+}
+
 @media print {
   .top-gov-bar, .navbar, .hero-banner, .dashboard-section,
   .form-card, .btn-secondary, .footer, .report-actions, .presets-container,
-  .history-section, .results-error {
+  .history-section, .results-error, .training-section {
     display: none !important;
   }
 

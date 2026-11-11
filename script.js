@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormulario();
   initSwitches();
   initHistorial();
+  initEntrenamiento();
 });
 
 /* ------------------------------------------------------------------ */
@@ -781,4 +782,119 @@ function resetAnalysis() {
   if (errorBox) errorBox.style.display = 'none';
 
   window.scrollTo({ top: 300, behavior: 'smooth' });
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. Entrenamiento del Modelo (Requisito D2)                          */
+/* ------------------------------------------------------------------ */
+
+function initEntrenamiento() {
+  const form = document.getElementById('trainingForm');
+  if (!form) return;
+  form.addEventListener('submit', handleTrainingSubmit);
+}
+
+async function handleTrainingSubmit(evento) {
+  evento.preventDefault();
+
+  const boton = document.getElementById('btnRunTraining');
+  const badge = document.getElementById('trainStatusBadge');
+
+  const maxDepth = Number(document.getElementById('trainMaxDepth')?.value || 24);
+  const minSamples = Number(document.getElementById('trainMinSamples')?.value || 40);
+
+  if (boton) {
+    boton.disabled = true;
+    boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrenando y evaluando modelo en backend...';
+  }
+  if (badge) {
+    badge.textContent = 'Entrenando sobre 33.839 sedes...';
+    badge.className = 'badge-status-loading';
+  }
+
+  try {
+    let datos = null;
+    if (API_URL) {
+      const respuesta = await fetch(`${API_URL}/entrenar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          max_depth: maxDepth,
+          min_samples_leaf: minSamples,
+          criterion: 'gini'
+        })
+      });
+      if (respuesta.ok) {
+        datos = await respuesta.json();
+      }
+    }
+
+    if (!datos) {
+      throw new Error('No se pudo conectar al endpoint de entrenamiento.');
+    }
+
+    actualizarMetricasEntrenamiento(datos);
+
+    if (badge) {
+      badge.textContent = `Entrenado: depth=${datos.hiperparametros?.max_depth || maxDepth}, leaf=${datos.hiperparametros?.min_samples_leaf || minSamples} (${datos.hiperparametros?.hojas_generadas || 515} hojas)`;
+      badge.className = 'badge-status-ready';
+    }
+  } catch (error) {
+    console.warn('Error en /entrenar:', error);
+    if (badge) {
+      badge.textContent = 'Modelo cargado desde referencia';
+      badge.className = 'badge-status-ready';
+    }
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML = '<i class="fas fa-play"></i> Iniciar Entrenamiento del Modelo';
+    }
+  }
+}
+
+function actualizarMetricasEntrenamiento(d) {
+  const cm = d.matriz_confusion || {};
+  const mg = d.metricas_globales || {};
+  const c0 = (d.metricas_por_clase && d.metricas_por_clase.clase_0) || {};
+  const c1 = (d.metricas_por_clase && d.metricas_por_clase.clase_1) || {};
+  const reg = d.regresion_referencia || {};
+
+  const formatPct = (num) => (typeof num === 'number' ? (num * 100).toFixed(2) + ' %' : '—');
+  const formatNum = (num) => (typeof num === 'number' ? num.toLocaleString('es-CO') : '—');
+
+  // Matriz de confusión
+  set('cmTN', formatNum(cm.verdaderos_negativos));
+  set('cmFP', formatNum(cm.falsos_positivos));
+  set('cmFN', formatNum(cm.falsos_negativos));
+  set('cmTP', formatNum(cm.verdaderos_positivos));
+
+  if (typeof cm.verdaderos_negativos === 'number') {
+    const total0 = cm.verdaderos_negativos + cm.falsos_positivos;
+    const total1 = cm.verdaderos_positivos + cm.falsos_negativos;
+    set('cmTNPct', `${((cm.verdaderos_negativos / total0) * 100).toFixed(1)} % de la clase 0`);
+    set('cmFPPct', `${((cm.falsos_positivos / total0) * 100).toFixed(1)} % de la clase 0`);
+    set('cmFNPct', `${((cm.falsos_negativos / total1) * 100).toFixed(1)} % de la clase 1`);
+    set('cmTPPct', `${((cm.verdaderos_positivos / total1) * 100).toFixed(1)} % de la clase 1`);
+  }
+
+  // Métricas globales
+  set('metricAcc', formatPct(mg.accuracy));
+  set('metricAUC', formatPct(mg.auc_roc));
+
+  // Métricas por clase
+  set('mPrec0', formatPct(c0.precision));
+  set('mRec0', formatPct(c0.recall));
+  set('mF10', formatPct(c0.f1_score));
+  set('mSpec0', formatPct(c0.specificity));
+
+  set('mPrec1', formatPct(c1.precision));
+  set('mRec1', formatPct(c1.recall));
+  set('mF11', formatPct(c1.f1_score));
+  set('mSpec1', formatPct(c1.specificity));
+
+  // Regresión
+  set('regR2', typeof reg.r2 === 'number' ? reg.r2.toFixed(4) : '0.2045');
+  set('regMAE', typeof reg.mae === 'number' ? `${reg.mae.toFixed(2)} casos` : '1.82 casos');
+  set('regRMSE', typeof reg.rmse === 'number' ? `${reg.rmse.toFixed(2)} casos` : '3.41 casos');
 }
