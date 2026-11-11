@@ -163,11 +163,13 @@
     <section id="dashboard" class="dashboard-section">
       <div class="section-header">
         <div>
-          <h3 class="section-title"><i class="fas fa-chart-line"></i> Diagnóstico de la Realidad Nacional (DANE 2024)
-          </h3>
-          <p class="section-subtitle">Evidencia estadística que fundamenta la necesidad de una herramienta de alerta
-            temprana como EduTrack.</p>
+          <h3 class="section-title"><i class="fas fa-chart-line"></i> Contexto Nacional de Referencia</h3>
+          <p class="section-subtitle">
+            Cifras del estudio que motivan EduTrack. Son datos de referencia fijos: no los calcula el modelo ni
+            cambian con sus análisis.
+          </p>
         </div>
+        <span class="reference-chip"><i class="fas fa-book"></i> Datos de referencia · DANE 2024</span>
       </div>
 
       <!-- Tarjetas de Métricas Nacionales (KPIs) -->
@@ -179,7 +181,7 @@
           <div class="kpi-content">
             <h3>Sedes Evaluadas</h3>
             <div class="kpi-value">43.120</div>
-            <div class="kpi-subtext">Sedes públicas oficiales que rindieron censo</div>
+            <div class="kpi-subtext">Sedes del censo tomadas como referencia del estudio</div>
           </div>
         </div>
 
@@ -240,9 +242,9 @@
             <canvas id="chartBrechaZona"></canvas>
           </div>
           <div class="chart-card-footer">
-            <span><i class="fas fa-info-circle"></i> En la ruralidad solo el 8.1% de sedes reporta casos por falta de
+            <span><i class="fas fa-info-circle"></i> En la ruralidad solo el 8.1 % de sedes reporta casos por falta de
               detección.</span>
-            <strong>Fuente: DANE 2024</strong>
+            <strong>Referencia: DANE 2024</strong>
           </div>
         </div>
 
@@ -256,9 +258,26 @@
             <canvas id="chartNivelEducativo"></canvas>
           </div>
           <div class="chart-card-footer">
-            <span><i class="fas fa-exclamation-triangle"></i> Los trastornos de aprendizaje se detectan 13x más en
+            <span><i class="fas fa-exclamation-triangle"></i> Los trastornos de aprendizaje se detectan 13× más en
               primaria que en preescolar.</span>
-            <strong>Fuente: DANE 2024</strong>
+            <strong>Referencia: DANE 2024</strong>
+          </div>
+        </div>
+
+        <!-- Gráfico 3: Datos reales de la cuenta (Supabase) -->
+        <div class="chart-card chart-card--wide">
+          <div class="chart-card-header">
+            <h4><i class="fas fa-database"></i> Tus Análisis Recientes (datos reales)</h4>
+            <p>Probabilidad de clase 1 devuelta por la API en los últimos envíos guardados en Supabase.</p>
+          </div>
+          <div class="chart-container" id="misAnalisisCanvasWrap" hidden>
+            <canvas id="chartMisAnalisis"></canvas>
+          </div>
+          <p class="chart-empty" id="misAnalisisStatus">Cargando tus análisis…</p>
+          <div class="chart-card-footer">
+            <span><i class="fas fa-circle-check"></i> Calculado con la tabla <code>analisis_sede</code> de tu cuenta
+              (azul = clase 1, gris = clase 0).</span>
+            <strong>Datos reales</strong>
           </div>
         </div>
       </div>

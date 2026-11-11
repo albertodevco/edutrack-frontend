@@ -550,7 +550,10 @@ async function initHistorial() {
 
   try {
     const { data } = await sb.auth.getSession();
-    if (!data || !data.session) return;
+    if (!data || !data.session) {
+      renderChartMisAnalisis([]);
+      return;
+    }
 
     window.eduTrackSession = data.session;
     await cargarHistorial();
@@ -582,9 +585,12 @@ async function cargarHistorial() {
 
     if (!data || data.length === 0) {
       if (tabla) tabla.hidden = true;
+      renderChartMisAnalisis([]);
       setHistoryStatus('Aún no hay análisis registrados para esta cuenta.');
       return;
     }
+
+    renderChartMisAnalisis(data);
 
     if (cuerpo) {
       cuerpo.innerHTML = '';
@@ -612,12 +618,110 @@ async function cargarHistorial() {
   } catch (error) {
     console.warn('No se pudo leer el historial:', error);
     if (tabla) tabla.hidden = true;
+    renderChartMisAnalisis([]);
     setHistoryStatus(
       'No se pudo leer el historial. Ejecuta supabase/migrations/001_analisis_sede.sql ' +
       'y revisa las políticas RLS.',
       true
     );
   }
+}
+
+let chartMisAnalisis = null;
+
+/**
+ * Gráfica con los últimos análisis reales de la cuenta (Supabase).
+ * Azul = clase 1, gris = clase 0. No inventa datos: si no hay filas,
+ * oculta el lienzo y muestra un mensaje.
+ */
+function renderChartMisAnalisis(filas) {
+  const wrap = document.getElementById('misAnalisisCanvasWrap');
+  const canvas = document.getElementById('chartMisAnalisis');
+  const estado = document.getElementById('misAnalisisStatus');
+  if (!wrap || !canvas) return;
+
+  if (typeof Chart === 'undefined') {
+    if (estado) estado.textContent = 'Chart.js no está disponible; no se pudo dibujar la gráfica.';
+    return;
+  }
+
+  if (!filas || filas.length === 0) {
+    wrap.hidden = true;
+    if (estado) {
+      estado.hidden = false;
+      estado.textContent = 'Aún no hay análisis guardados. Cada envío aparecerá aquí.';
+    }
+    return;
+  }
+
+  // La consulta llega en orden descendente; la gráfica se dibuja cronológica.
+  const orden = [...filas].reverse();
+  const etiquetas = orden.map((fila) => formatearFechaCorta(fila.created_at));
+  const valores = orden.map((fila) => Number((Number(fila.probabilidad) * 100).toFixed(2)));
+  const colores = orden.map((fila) => (Number(fila.clase) === 1 ? '#2563eb' : '#94a3b8'));
+
+  wrap.hidden = false;
+  if (estado) estado.hidden = true;
+
+  if (chartMisAnalisis) {
+    chartMisAnalisis.data.labels = etiquetas;
+    chartMisAnalisis.data.datasets[0].data = valores;
+    chartMisAnalisis.data.datasets[0].backgroundColor = colores;
+    chartMisAnalisis.update();
+    return;
+  }
+
+  chartMisAnalisis = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: etiquetas,
+      datasets: [
+        {
+          label: 'Probabilidad clase 1 (%)',
+          data: valores,
+          backgroundColor: colores,
+          borderRadius: 6,
+          maxBarThickness: 48
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (contexto) => {
+              const fila = orden[contexto.dataIndex];
+              const zona = fila.zona === 'rural' ? 'rural' : 'urbana';
+              return ` ${contexto.raw} % · clase ${fila.clase} · ${zona} · ${fila.departamento}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { callback: (valor) => valor + ' %' },
+          grid: { color: '#f1f5f9' }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function formatearFechaCorta(iso) {
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return '—';
+  return fecha.toLocaleString('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function formatearFecha(iso) {

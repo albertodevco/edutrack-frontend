@@ -483,6 +483,42 @@ a:hover {
   justify-content: space-between;
 }
 
+.chart-card--wide {
+  grid-column: 1 / -1;
+}
+
+.reference-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--slate-600);
+  background-color: var(--slate-100);
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.chart-empty {
+  margin: auto 0;
+  padding: 18px 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--slate-500);
+}
+
+.chart-card-footer code {
+  background-color: var(--slate-100);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.72rem;
+  color: var(--slate-700);
+}
+
 /* Área de Trabajo: Formulario y Resultados */
 .analysis-workspace {
   display: grid;
