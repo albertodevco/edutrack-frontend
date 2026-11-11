@@ -74,14 +74,14 @@ El backend debe estar corriendo (por defecto en `http://localhost:5000`) y
 
 | Campo | Variable del modelo | Notas |
 |---|---|---|
-| Matrícula | `MATRICULA` | Entrada dominante (76,8 % de importancia) |
+| Matrícula | `MATRICULA` | Entrada dominante (72,0 % de importancia) |
 | Docentes | `N_DOCENTES` | Debe ser ≥ 1 |
 | Orientadores | `N_ORIENTADORES` | |
 | Niveles | `N_NIVELES` | 1 – 6 |
-| Jornadas | `N_JORNADAS` | Importancia 0, columna obligatoria |
+| Jornadas | `N_JORNADAS` | Importancia 0,0014 |
 | Zona | `ZONA_RURAL` | Rural = 1, Urbana = 0 |
 | Departamento | `DEP_*` | 33 valores; Amazonas = categoría base |
-| Bilingüe | `BILINGUE_SI` | Importancia 0, columna obligatoria |
+| Bilingüe | `BILINGUE_SI` | Importancia 0,0001 |
 | Etnoeducativa | `ETNOEDUC_SI` | |
 
 `EST_POR_DOCENTE` no se pide: lo calcula el backend.
@@ -93,9 +93,9 @@ los artefactos actuales (tolerancia `1e-9`):
 
 | Caso | Entrada | Probabilidad | Clase |
 |---|---|---|---|
-| Rural pequeña | 60 / 3 / 0 · Amazonas | 11.71 % | 0 |
-| Rural intermedia | 300 / 20 / 1 · Chocó | 43.35 % | 0 |
-| Urbana grande | 950 / 34 / 2 · Antioquia | 77.85 % | 1 |
+| Rural pequeña | 60 / 3 / 0 · Amazonas | 7.59 % | 0 |
+| Rural intermedia | 300 / 20 / 1 · Chocó | 62.69 % | 1 |
+| Urbana grande | 950 / 34 / 2 · Antioquia | 96.72 % | 1 |
 
 ## Resultados
 
