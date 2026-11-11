@@ -10,6 +10,6 @@
 window.EDUTRACK_CONFIG = {
   SUPABASE_URL: 'https://qkttfwezktegpbpyowah.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_3YclUAIPb9w9jnnyymWvHA_EWpjdQOp',
-  API_URL: 'https://ia-edutrack.onrender.com',
+  API_URL: 'https://edutrack-backend-uzvi.onrender.com',
   TABLA_ANALISIS: 'analisis_sede'
 };
