@@ -532,10 +532,10 @@ async function guardarAnalisis(payload, datos) {
 
     await cargarHistorial();
   } catch (error) {
-    console.warn('No se pudo guardar el análisis en Supabase:', error);
+    console.error('No se pudo guardar el análisis en Supabase:', error);
     setHistoryStatus(
-      'El análisis se calculó, pero no se pudo guardar en Supabase. ' +
-      'Verifica la tabla analisis_sede y sus políticas RLS.',
+      'El análisis se calculó, pero no se guardó en Supabase: ' + describirError(error) +
+      '. Ejecuta supabase/migrations/001_analisis_sede.sql y revisa las políticas RLS.',
       true
     );
   }
@@ -620,8 +620,8 @@ async function cargarHistorial() {
     if (tabla) tabla.hidden = true;
     renderChartMisAnalisis([]);
     setHistoryStatus(
-      'No se pudo leer el historial. Ejecuta supabase/migrations/001_analisis_sede.sql ' +
-      'y revisa las políticas RLS.',
+      'No se pudo leer el historial: ' + describirError(error) +
+      '. Ejecuta supabase/migrations/001_analisis_sede.sql y revisa las políticas RLS.',
       true
     );
   }
@@ -734,6 +734,13 @@ function formatearFecha(iso) {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+function describirError(error) {
+  if (!error) return 'error desconocido';
+  const partes = [error.message, error.details, error.hint].filter(Boolean);
+  const codigo = error.code ? `[${error.code}] ` : '';
+  return codigo + (partes.length ? partes.join(' · ') : 'error desconocido');
 }
 
 function setHistoryStatus(texto, esError) {
