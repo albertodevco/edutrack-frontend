@@ -87,12 +87,50 @@ const BANDAS = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  initNavbar();
   initDashboardCharts();
   initFormulario();
   initSwitches();
   initHistorial();
   initEntrenamiento();
 });
+
+/* ------------------------------------------------------------------ */
+/* 0. Navbar responsive                                                */
+/* ------------------------------------------------------------------ */
+
+function initNavbar() {
+  const navbar = document.querySelector('.navbar');
+  const toggle = document.getElementById('navToggle');
+  const menu = document.getElementById('navMenu');
+  if (!navbar || !toggle || !menu) return;
+
+  const icono = toggle.querySelector('i');
+
+  const cerrar = () => {
+    navbar.classList.remove('nav-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    if (icono) icono.className = 'fas fa-bars';
+  };
+
+  toggle.addEventListener('click', () => {
+    const abierto = navbar.classList.toggle('nav-open');
+    toggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    if (icono) icono.className = abierto ? 'fas fa-xmark' : 'fas fa-bars';
+  });
+
+  menu.addEventListener('click', (evento) => {
+    if (evento.target.closest('a')) cerrar();
+  });
+
+  document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape') cerrar();
+  });
+
+  document.addEventListener('click', (evento) => {
+    if (!navbar.contains(evento.target)) cerrar();
+  });
+}
 
 /* ------------------------------------------------------------------ */
 /* 1. Gráficos del dashboard                                           */
