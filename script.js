@@ -837,9 +837,15 @@ async function handleTrainingSubmit(evento) {
 
   const boton = document.getElementById('btnRunTraining');
   const badge = document.getElementById('trainStatusBadge');
+  const alerta = document.getElementById('trainError');
 
   const maxDepth = Number(document.getElementById('trainMaxDepth')?.value || 24);
   const minSamples = Number(document.getElementById('trainMinSamples')?.value || 40);
+
+  if (alerta) {
+    alerta.hidden = true;
+    alerta.textContent = '';
+  }
 
   if (boton) {
     boton.disabled = true;
@@ -851,37 +857,50 @@ async function handleTrainingSubmit(evento) {
   }
 
   try {
-    let datos = null;
-    if (API_URL) {
-      const respuesta = await fetch(`${API_URL}/entrenar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          max_depth: maxDepth,
-          min_samples_leaf: minSamples,
-          criterion: 'gini'
-        })
-      });
-      if (respuesta.ok) {
-        datos = await respuesta.json();
-      }
+    if (!API_URL) {
+      throw new Error('Falta configurar API_URL en config.js.');
     }
 
-    if (!datos) {
-      throw new Error('No se pudo conectar al endpoint de entrenamiento.');
+    const respuesta = await fetch(`${API_URL}/entrenar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        max_depth: maxDepth,
+        min_samples_leaf: minSamples,
+        criterion: 'gini'
+      })
+    });
+
+    if (!respuesta.ok) {
+      let detalle = '';
+      try {
+        const cuerpo = await respuesta.json();
+        if (cuerpo && typeof cuerpo.detail === 'string') detalle = cuerpo.detail;
+      } catch (_) {
+        /* el cuerpo de error no era JSON */
+      }
+      throw new Error(`El backend respondió ${respuesta.status}${detalle ? `: ${detalle}` : ''}.`);
     }
+
+    const datos = await respuesta.json();
 
     actualizarMetricasEntrenamiento(datos);
 
     if (badge) {
-      badge.textContent = `Entrenado: depth=${datos.hiperparametros?.max_depth || maxDepth}, leaf=${datos.hiperparametros?.min_samples_leaf || minSamples} (${datos.hiperparametros?.hojas_generadas || 515} hojas)`;
+      const hp = datos.hiperparametros || {};
+      badge.textContent = `Entrenado · depth=${hp.max_depth ?? maxDepth} · leaf=${hp.min_samples_leaf ?? minSamples} · ${hp.hojas_generadas ?? '—'} hojas`;
       badge.className = 'badge-status-ready';
     }
   } catch (error) {
-    console.warn('Error en /entrenar:', error);
+    console.error('Error en /entrenar:', error);
     if (badge) {
-      badge.textContent = 'Modelo cargado desde referencia';
-      badge.className = 'badge-status-ready';
+      badge.textContent = 'Entrenamiento fallido';
+      badge.className = 'badge-status-error';
+    }
+    if (alerta) {
+      alerta.hidden = false;
+      alerta.textContent = `No se pudo ejecutar el entrenamiento. ${error.message || ''} ` +
+        'Comprueba que el backend en Render esté activo (la primera petición puede tardar en despertar) y vuelve a intentarlo.';
     }
   } finally {
     if (boton) {
@@ -910,6 +929,16 @@ function actualizarMetricasEntrenamiento(d) {
   if (typeof cm.verdaderos_negativos === 'number') {
     const total0 = cm.verdaderos_negativos + cm.falsos_positivos;
     const total1 = cm.verdaderos_positivos + cm.falsos_negativos;
+    const total = total0 + total1;
+    const aciertos = cm.verdaderos_negativos + cm.verdaderos_positivos;
+
+    set('cmReal0', formatNum(total0));
+    set('cmReal1', formatNum(total1));
+    set('support0', formatNum(total0));
+    set('support1', formatNum(total1));
+    set('cmTestCount', formatNum(total));
+    set('metricAccSub', `${formatNum(aciertos)} aciertos de ${formatNum(total)} sedes`);
+
     set('cmTNPct', `${((cm.verdaderos_negativos / total0) * 100).toFixed(1)} % de la clase 0`);
     set('cmFPPct', `${((cm.falsos_positivos / total0) * 100).toFixed(1)} % de la clase 0`);
     set('cmFNPct', `${((cm.falsos_negativos / total1) * 100).toFixed(1)} % de la clase 1`);
@@ -919,6 +948,9 @@ function actualizarMetricasEntrenamiento(d) {
   // Métricas globales
   set('metricAcc', formatPct(mg.accuracy));
   set('metricAUC', formatPct(mg.auc_roc));
+  if (typeof mg.auc_roc === 'number') {
+    set('metricAUCSub', 'Capacidad de discriminación probabilística del modelo');
+  }
 
   // Métricas por clase
   set('mPrec0', formatPct(c0.precision));
@@ -931,8 +963,34 @@ function actualizarMetricasEntrenamiento(d) {
   set('mF11', formatPct(c1.f1_score));
   set('mSpec1', formatPct(c1.specificity));
 
+  // Interpretación con los valores de esta ejecución
+  set('intSpec1', formatPct(c1.specificity));
+  set('intPrec1', formatPct(c1.precision));
+  set(
+    'intSpec1Text',
+    typeof c1.specificity === 'number'
+      ? `El ${formatPct(c1.specificity)} de las sedes sin casos foco se descarta correctamente, lo que reduce visitas innecesarias del personal de orientación.`
+      : 'Pendiente de ejecución.'
+  );
+  set(
+    'intPrec1Text',
+    typeof c1.precision === 'number'
+      ? `De cada 100 alertas emitidas, cerca de ${Math.round(c1.precision * 100)} corresponden a sedes con presencia real de casos foco.`
+      : 'Pendiente de ejecución.'
+  );
+
+  const proporcion = d.dataset && typeof d.dataset.proporcion_positiva === 'number'
+    ? d.dataset.proporcion_positiva
+    : null;
+  set(
+    'intBalance',
+    proporcion === null
+      ? '—'
+      : `${(proporcion * 100).toFixed(1)} % con foco vs ${((1 - proporcion) * 100).toFixed(1)} % sin foco`
+  );
+
   // Regresión
-  set('regR2', typeof reg.r2 === 'number' ? reg.r2.toFixed(4) : '0.2045');
-  set('regMAE', typeof reg.mae === 'number' ? `${reg.mae.toFixed(2)} casos` : '1.82 casos');
-  set('regRMSE', typeof reg.rmse === 'number' ? `${reg.rmse.toFixed(2)} casos` : '3.41 casos');
+  set('regR2', typeof reg.r2 === 'number' ? reg.r2.toFixed(4) : '—');
+  set('regMAE', typeof reg.mae === 'number' ? `${reg.mae.toFixed(2)} casos` : '—');
+  set('regRMSE', typeof reg.rmse === 'number' ? `${reg.rmse.toFixed(2)} casos` : '—');
 }

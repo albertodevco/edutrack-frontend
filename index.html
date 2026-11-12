@@ -654,16 +654,16 @@
                   <i class="fas fa-sitemap"></i> Profundidad Máxima (max_depth)
                 </label>
                 <select id="trainMaxDepth" class="form-select">
-                  <option value="24" selected>24 (Óptimo producción: 515 hojas)</option>
-                  <option value="20">20 (563 hojas)</option>
-                  <option value="16">16 (438 hojas)</option>
-                  <option value="14">14 (359 hojas)</option>
-                  <option value="12">12 (286 hojas)</option>
-                  <option value="10">10 (198 hojas)</option>
-                  <option value="8">8 (114 hojas)</option>
-                  <option value="6">6 (Modelo base: 51 hojas)</option>
+                  <option value="24" selected>24 (óptimo de producción)</option>
+                  <option value="20">20</option>
+                  <option value="16">16</option>
+                  <option value="14">14</option>
+                  <option value="12">12</option>
+                  <option value="10">10</option>
+                  <option value="8">8</option>
+                  <option value="6">6 (modelo base del notebook)</option>
                 </select>
-                <span class="input-hint">Controla la complejidad y capacidad de discriminación</span>
+                <span class="input-hint">Controla la complejidad; las hojas se recalculan en el backend</span>
               </div>
 
               <div class="form-group">
@@ -704,12 +704,14 @@
         <div id="trainingResults" class="training-results-card">
           <div class="results-header">
             <h3><i class="fas fa-square-poll-vertical"></i> Resultados y Métricas de Evaluación</h3>
-            <span class="badge-status-ready" id="trainStatusBadge">Modelo Entrenado y Evaluado</span>
+            <span class="badge-status-idle" id="trainStatusBadge">Sin ejecutar · pulsa Iniciar Entrenamiento</span>
           </div>
+
+          <div id="trainError" class="training-alert" hidden></div>
 
           <!-- Matriz de Confusión Visual -->
           <div class="cm-container">
-            <h4 class="cm-title"><i class="fas fa-table-cells-large"></i> Matriz de Confusión (Conjunto de Prueba Independiente: 8.460 Sedes)</h4>
+            <h4 class="cm-title"><i class="fas fa-table-cells-large"></i> Matriz de Confusión (Conjunto de Prueba Independiente: <span id="cmTestCount">—</span> Sedes)</h4>
             <p class="cm-subtitle">Identificación de clases reales (filas) versus clases predichas por la IA (columnas).</p>
             
             <div class="cm-matrix-wrapper">
@@ -718,28 +720,28 @@
                 <div class="cm-col-header"><strong>Predicho: Clase 0</strong><br><small>Sin foco</small></div>
                 <div class="cm-col-header"><strong>Predicho: Clase 1</strong><br><small>Con foco</small></div>
 
-                <div class="cm-row-header"><strong>Real: Clase 0</strong><br><small>Sin foco (6.959)</small></div>
+                <div class="cm-row-header"><strong>Real: Clase 0</strong><br><small>Sin foco (<span id="cmReal0">—</span>)</small></div>
                 <div class="cm-cell cm-tn">
-                  <span class="cm-val" id="cmTN">6.570</span>
+                  <span class="cm-val" id="cmTN">—</span>
                   <span class="cm-label">Verdaderos Negativos (TN)</span>
-                  <span class="cm-pct" id="cmTNPct">94.4 % de la clase 0</span>
+                  <span class="cm-pct" id="cmTNPct">—</span>
                 </div>
                 <div class="cm-cell cm-fp">
-                  <span class="cm-val" id="cmFP">389</span>
+                  <span class="cm-val" id="cmFP">—</span>
                   <span class="cm-label">Falsos Positivos (FP)</span>
-                  <span class="cm-pct" id="cmFPPct">5.6 % de la clase 0</span>
+                  <span class="cm-pct" id="cmFPPct">—</span>
                 </div>
 
-                <div class="cm-row-header"><strong>Real: Clase 1</strong><br><small>Con foco (1.501)</small></div>
+                <div class="cm-row-header"><strong>Real: Clase 1</strong><br><small>Con foco (<span id="cmReal1">—</span>)</small></div>
                 <div class="cm-cell cm-fn">
-                  <span class="cm-val" id="cmFN">702</span>
+                  <span class="cm-val" id="cmFN">—</span>
                   <span class="cm-label">Falsos Negativos (FN)</span>
-                  <span class="cm-pct" id="cmFNPct">46.8 % de la clase 1</span>
+                  <span class="cm-pct" id="cmFNPct">—</span>
                 </div>
                 <div class="cm-cell cm-tp">
-                  <span class="cm-val" id="cmTP">799</span>
+                  <span class="cm-val" id="cmTP">—</span>
                   <span class="cm-label">Verdaderos Positivos (TP)</span>
-                  <span class="cm-pct" id="cmTPPct">53.2 % de la clase 1</span>
+                  <span class="cm-pct" id="cmTPPct">—</span>
                 </div>
               </div>
             </div>
@@ -749,13 +751,13 @@
           <div class="metrics-grid-container">
             <div class="metric-card-summary">
               <span class="metric-label">Exactitud Global (Accuracy)</span>
-              <span class="metric-big-num" id="metricAcc">87.10 %</span>
-              <span class="metric-subtext">7.369 aciertos de 8.460 sedes</span>
+              <span class="metric-big-num" id="metricAcc">—</span>
+              <span class="metric-subtext" id="metricAccSub">Pendiente de ejecución</span>
             </div>
             <div class="metric-card-summary">
               <span class="metric-label">Área bajo la Curva (ROC-AUC)</span>
-              <span class="metric-big-num" id="metricAUC">87.45 %</span>
-              <span class="metric-subtext">Capacidad de discriminación probabilística</span>
+              <span class="metric-big-num" id="metricAUC">—</span>
+              <span class="metric-subtext" id="metricAUCSub">Pendiente de ejecución</span>
             </div>
           </div>
 
@@ -775,19 +777,19 @@
               <tbody>
                 <tr>
                   <td><strong>Clase 0 · No reporta casos foco</strong></td>
-                  <td id="mPrec0">90.35 %</td>
-                  <td id="mRec0">94.41 %</td>
-                  <td id="mF10">92.34 %</td>
-                  <td><strong id="mSpec0" style="color: #0284c7;">53.23 %</strong></td>
-                  <td>6.959 sedes</td>
+                  <td id="mPrec0">—</td>
+                  <td id="mRec0">—</td>
+                  <td id="mF10">—</td>
+                  <td><strong id="mSpec0" style="color: #0284c7;">—</strong></td>
+                  <td><span id="support0">—</span> sedes</td>
                 </tr>
                 <tr>
                   <td><strong>Clase 1 · Presencia de casos foco (NEE)</strong></td>
-                  <td id="mPrec1">67.26 %</td>
-                  <td id="mRec1">53.23 %</td>
-                  <td id="mF11">59.43 %</td>
-                  <td><strong id="mSpec1" style="color: #0284c7;">94.41 %</strong></td>
-                  <td>1.501 sedes</td>
+                  <td id="mPrec1">—</td>
+                  <td id="mRec1">—</td>
+                  <td id="mF11">—</td>
+                  <td><strong id="mSpec1" style="color: #0284c7;">—</strong></td>
+                  <td><span id="support1">—</span> sedes</td>
                 </tr>
               </tbody>
             </table>
@@ -798,9 +800,9 @@
             <h4><i class="fas fa-chart-line"></i> Métricas de Desempeño del Modelo de Regresión (Referencia D2)</h4>
             <p>Estimación del volumen de casos foco en sedes que reportan actividad:</p>
             <div class="reg-metrics-pills">
-              <div class="reg-pill"><strong>R² (Coef. Determinación):</strong> <span id="regR2">0.2045</span></div>
-              <div class="reg-pill"><strong>MAE (Error Absoluto Medio):</strong> <span id="regMAE">1.82 casos</span></div>
-              <div class="reg-pill"><strong>RMSE (Raíz Error Cuadrático Medio):</strong> <span id="regRMSE">3.41 casos</span></div>
+              <div class="reg-pill"><strong>R² (Coef. Determinación):</strong> <span id="regR2">—</span></div>
+              <div class="reg-pill"><strong>MAE (Error Absoluto Medio):</strong> <span id="regMAE">—</span></div>
+              <div class="reg-pill"><strong>RMSE (Raíz Error Cuadrático Medio):</strong> <span id="regRMSE">—</span></div>
             </div>
             <p class="reg-note"><i class="fas fa-info-circle"></i> <em>Nota metodológica:</em> El sistema EduTrack utiliza el modelo de <strong>Clasificación Supervisada</strong> como motor principal para la detección preventiva de subregistro, priorizando recursos hacia sedes en riesgo.</p>
           </div>
@@ -809,9 +811,9 @@
           <div class="interpretation-box">
             <h4><i class="fas fa-magnifying-glass-chart"></i> Interpretación del Desempeño y Análisis de Errores</h4>
             <ul>
-              <li><strong>Alta Especificidad en Clase 1 (94.41 %):</strong> Permite descartar con total seguridad las sedes que no presentan condiciones foco, evitando desperdiciar personal de orientación escolar en visitas infructuosas.</li>
-              <li><strong>Precisión Confiable (67.26 %):</strong> Dos de cada tres alertas generadas por EduTrack corresponden a casos reales que requieren atención de necesidades educativas especiales.</li>
-              <li><strong>Errores y Limitaciones:</strong> El desbalance de clases (82 % vs 18 %) y la ausencia de variables cualitativas en el censo generan falsos negativos en sedes rurales pequeñas.</li>
+              <li><strong>Especificidad en Clase 1 (<span id="intSpec1">—</span>):</strong> <span id="intSpec1Text">Pendiente de ejecución.</span></li>
+              <li><strong>Precisión en Clase 1 (<span id="intPrec1">—</span>):</strong> <span id="intPrec1Text">Pendiente de ejecución.</span></li>
+              <li><strong>Errores y Limitaciones:</strong> El desbalance de clases (<span id="intBalance">—</span>) y la ausencia de variables cualitativas en el censo generan falsos negativos en sedes rurales pequeñas.</li>
               <li><strong>Propuestas de Mejora:</strong> Implementación de balanceo sintético con SMOTE, ensamble Random Forest y calibración de umbrales por Secretaría de Educación.</li>
             </ul>
           </div>

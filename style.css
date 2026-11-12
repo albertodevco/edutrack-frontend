@@ -1788,6 +1788,44 @@ html.auth-pending body {
   gap: 6px;
 }
 
+.badge-status-idle {
+  background-color: var(--slate-100);
+  color: var(--slate-600);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--slate-200);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-status-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #fecaca;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.training-alert {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  color: #991b1b;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 /* Matriz de confusión */
 .cm-container {
   margin-top: 18px;
