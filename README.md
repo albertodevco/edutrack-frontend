@@ -1,4 +1,4 @@
-# 🎓 EduTrack · Frontend
+# EduTrack · Frontend
 
 Panel web para estimar la probabilidad de presencia de casos foco (TEA,
 trastornos del aprendizaje y condiciones psicosociales) en sedes educativas de
@@ -34,18 +34,7 @@ API Flask en Render  →  DecisionTreeClassifier (41 features)
 Este repositorio se despliega como sitio estático. La API vive en el
 repositorio **`edutrack-backend`** (Render).
 
-## Configuración
 
-Edita `config.js`:
-
-```js
-window.EDUTRACK_CONFIG = {
-  SUPABASE_URL: 'https://TU-PROYECTO.supabase.co',
-  SUPABASE_ANON_KEY: 'TU_CLAVE_PUBLICABLE',
-  API_URL: 'https://TU-SERVICIO.onrender.com',
-  TABLA_ANALISIS: 'analisis_sede'
-};
-```
 
 ## Base de datos (Supabase)
 
@@ -57,18 +46,6 @@ window.EDUTRACK_CONFIG = {
    confirmación por correo, el registro mostrará el aviso correspondiente y no
    entrará en bucle.
 
-## Ejecución local
-
-No abras los HTML con `file://`: Supabase Auth y el fetch necesitan un origen
-HTTP.
-
-```bash
-python -m http.server 8080
-# http://localhost:8080/login.html
-```
-
-El backend debe estar corriendo (por defecto en `http://localhost:5000`) y
-`API_URL` debe apuntar a él.
 
 ## Formulario
 
@@ -111,28 +88,3 @@ los artefactos actuales (tolerancia `1e-9`):
 Cada envío se inserta en `analisis_sede`; el KPI “Análisis registrados” y la
 sección Historial leen las últimas 10 filas de la cuenta autenticada. Si la
 tabla o las políticas no existen, la app sigue funcionando y muestra un aviso.
-
-## Subir a GitHub
-
-El repositorio ya está inicializado y con los cambios preparados:
-
-```powershell
-cd "C:\Users\Admin\Documents\Inteligencia Artificial\edutrack-frontend"
-git add -A
-git commit -m "feat: formulario de 9 campos, resultados reales del modelo e historial Supabase"
-git push origin main
-```
-
-## Despliegue
-
-1. Despliega primero el backend actualizado (`edutrack-backend`) en Render.
-2. Publica este repositorio en un hosting estático (Vercel, Netlify o GitHub
-   Pages). En Vercel: *Root Directory* vacío, *Framework* `Other`, sin build.
-3. Actualiza `API_URL` y las credenciales en `config.js` y haz commit: el
-   hosting redepliega solo.
-4. Añade el dominio del frontend a `ALLOWED_ORIGINS` del backend si restringes
-   CORS.
-5. Ejecuta `supabase/migrations/001_analisis_sede.sql` en el SQL Editor.
-
-> La clave de Supabase es una `publishable key`: puede estar en el navegador.
-> La seguridad real depende de RLS. Nunca subas la clave `service_role`.
